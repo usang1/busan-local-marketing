@@ -8,7 +8,7 @@ export const BRAND = {
 
 export const SITE = {
   url: process.env.NEXT_PUBLIC_SITE_URL || "http://localhost:3000",
-  kakaoChatUrl: process.env.NEXT_PUBLIC_KAKAO_CHAT_URL || "",
+  kakaoChatUrl: process.env.NEXT_PUBLIC_KAKAO_CHAT_URL || "https://open.kakao.com/o/sxR2zvFi",
   email: process.env.NEXT_PUBLIC_CONTACT_EMAIL || "",
   phone: process.env.NEXT_PUBLIC_CONTACT_PHONE || "",
 };
