@@ -1,0 +1,181 @@
+import Image from "next/image";
+import { ArrowRight, ClipboardCheck, MapPin, MousePointerClick, PhoneCall, Search, Star } from "lucide-react";
+import { ButtonLink } from "@/components/ui/button";
+import { KakaoCta } from "@/components/ui/kakao-cta";
+import { Section, SectionHeading } from "@/components/ui/section";
+import { ServiceCard } from "@/components/sections/service-card";
+import { PortfolioCard } from "@/components/sections/portfolio-card";
+import { FaqSection } from "@/components/sections/faq-section";
+import { FinalCta } from "@/components/sections/final-cta";
+import { BRAND } from "@/config/site";
+import { createMetadata } from "@/lib/seo";
+import { processSteps, serviceGroups } from "@/data/services";
+import { getFeaturedPublicPortfolios } from "@/lib/public/content";
+import { ANALYTICS_EVENTS } from "@/lib/analytics/events";
+
+export const metadata = createMetadata({
+  title: "부산·경남 네이버 플레이스 광고대행",
+  description:
+    "부산·경남 자영업자와 로컬 비즈니스를 위한 네이버 플레이스 진단, 로컬 SEO, 블로그, 숏폼 콘텐츠 마케팅 상담 페이지입니다.",
+});
+
+const problems = [
+  "플레이스 순위가 계속 떨어진다.",
+  "광고비는 나가는데 예약이 늘지 않는다.",
+  "경쟁 매장만 검색 상단에 보인다.",
+  "블로그를 꾸준히 해도 방문자가 늘지 않는다.",
+  "리뷰는 많은데 신규 고객이 없다.",
+  "마케팅을 어디서부터 손대야 할지 모르겠다.",
+];
+
+const funnel = [
+  { label: "검색", icon: Search },
+  { label: "클릭", icon: MousePointerClick },
+  { label: "플레이스 확인", icon: MapPin },
+  { label: "사진·리뷰·메뉴", icon: Star },
+  { label: "전화·예약·길찾기", icon: PhoneCall },
+];
+
+export default async function Home() {
+  const featuredPortfolios = await getFeaturedPublicPortfolios();
+
+  return (
+    <>
+      <section className="relative overflow-hidden pb-14 pt-12 sm:pb-20 lg:pt-16">
+        <div className="container-page grid gap-10 lg:grid-cols-[0.95fr_1.05fr] lg:items-center">
+          <div className="fade-up">
+            <p className="mb-4 inline-flex rounded-[6px] bg-pale-mint px-3 py-1 text-sm font-bold text-accent">
+              {BRAND.region} 로컬 비즈니스 대상
+            </p>
+            <h1 className="text-balance text-4xl font-extrabold leading-tight text-ink sm:text-5xl lg:text-6xl">
+              검색 노출이 아니라
+              <br />
+              매출까지 연결되는 로컬 마케팅
+            </h1>
+            <p className="mt-6 max-w-2xl text-pretty text-lg leading-8 text-muted">
+              네이버 플레이스에서 고객이 검색하고, 클릭하고, 신뢰하고, 전화·예약·방문까지
+              이어지는 과정을 함께 점검합니다. 광고 계약 전에 현재 플레이스 상태부터
+              확인하세요.
+            </p>
+            <div className="mt-8 grid gap-3 sm:flex">
+              <ButtonLink href="/free-audit" size="lg" data-analytics-event={ANALYTICS_EVENTS.CLICK_FREE_AUDIT} data-analytics-location="hero">
+                <ClipboardCheck size={19} aria-hidden="true" />
+                무료 플레이스 진단받기
+              </ButtonLink>
+              <KakaoCta size="lg" location="hero" />
+            </div>
+            <p className="mt-4 text-sm leading-6 text-muted">
+              광고 계약 없이 현재 플레이스 상태부터 확인해보세요. 담당자가 확인 후 상담합니다.
+            </p>
+          </div>
+          <div className="relative fade-up">
+            <Image
+              src="/placeholders/local-audit-hero.png"
+              alt="로컬 플레이스 진단 자료와 상담 화면"
+              width={1536}
+              height={1024}
+              priority
+              className="aspect-[4/3] w-full rounded-[8px] border border-white object-cover shadow-[0_30px_80px_rgba(31,42,46,0.12)]"
+            />
+          </div>
+        </div>
+      </section>
+
+      <Section className="bg-white/50">
+        <SectionHeading eyebrow="Problem" title="혹시 지금 이런 상황인가요?" />
+        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+          {problems.map((problem) => (
+            <div key={problem} className="rounded-[8px] border border-line bg-white p-5">
+              <p className="text-base font-bold leading-7 text-ink">{problem}</p>
+            </div>
+          ))}
+        </div>
+      </Section>
+
+      <Section>
+        <div className="grid gap-10 lg:grid-cols-[0.8fr_1.2fr] lg:items-center">
+          <SectionHeading
+            eyebrow="Conversion Funnel"
+            title="플레이스 순위만 올라간다고 손님이 오는 것은 아닙니다"
+            description="검색은 되는데 예약이 없다면 노출보다 전환부터 확인해야 합니다. 대표사진 하나가 클릭을 바꾸고, 리뷰 한 줄이 방문 결정을 바꿉니다."
+          />
+          <div className="rounded-[8px] border border-line bg-white p-5 sm:p-7">
+            <div className="mb-5 grid gap-3 sm:grid-cols-2">
+              <div className="rounded-[8px] bg-soft-beige p-4">
+                <p className="text-sm font-bold text-muted">기존 방식</p>
+                <p className="mt-2 text-xl font-extrabold text-ink">노출 → 클릭</p>
+              </div>
+              <div className="rounded-[8px] bg-pale-mint p-4">
+                <p className="text-sm font-bold text-accent">필요한 방식</p>
+                <p className="mt-2 text-xl font-extrabold text-ink">검색 → 신뢰 → 문의 → 방문</p>
+              </div>
+            </div>
+            <div className="grid gap-3 sm:grid-cols-5">
+              {funnel.map((item) => {
+                const Icon = item.icon;
+                return (
+                  <div key={item.label} className="rounded-[8px] border border-line bg-ivory p-4 text-center">
+                    <Icon className="mx-auto text-accent" size={22} aria-hidden="true" />
+                    <p className="mt-3 text-sm font-bold text-ink">{item.label}</p>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        </div>
+      </Section>
+
+      <Section className="bg-pale-blue/50">
+        <SectionHeading
+          eyebrow="Services"
+          title="로컬 검색에서 문의까지 필요한 부분을 나눠서 봅니다"
+          description="처음부터 모든 채널을 늘리지 않습니다. 업종과 상권에 맞춰 플레이스, 콘텐츠, 리뷰, 전환 동선의 우선순위를 정합니다."
+        />
+        <div className="grid gap-5 md:grid-cols-2 lg:grid-cols-3">
+          {serviceGroups.slice(0, 6).map((service) => (
+            <ServiceCard key={service.slug} {...service} />
+          ))}
+        </div>
+      </Section>
+
+      <Section>
+        <SectionHeading
+          eyebrow="Process"
+          title="광고를 맡기면 무엇을 하는지 알 수 있어야 합니다"
+          description="진단부터 개선까지의 과정을 작은 단계로 나눠 진행합니다."
+        />
+        <div className="grid gap-4 lg:grid-cols-7">
+          {processSteps.map((step) => (
+            <article key={step.step} className="rounded-[8px] border border-line bg-white p-5">
+              <p className="text-sm font-extrabold text-accent">{step.step}</p>
+              <h3 className="mt-3 text-lg font-bold text-ink">{step.title}</h3>
+              <p className="mt-3 text-sm leading-7 text-muted">{step.description}</p>
+            </article>
+          ))}
+        </div>
+      </Section>
+
+      <Section className="bg-white/60">
+        <div className="mb-10 flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
+          <SectionHeading
+            eyebrow="Portfolio"
+            title="실제 성과는 확인된 데이터만 공개합니다"
+            description="현재는 사례 구조를 먼저 준비한 상태입니다. 실제 고객사, 매출, 순위, 후기 등은 확인된 자료가 생긴 뒤 반영합니다."
+          />
+          <ButtonLink href="/portfolio" variant="outline" className="w-fit">
+            포트폴리오 보기
+            <ArrowRight size={16} aria-hidden="true" />
+          </ButtonLink>
+        </div>
+        <div className="grid gap-5 md:grid-cols-3">
+          {featuredPortfolios.map((item) => (
+            <PortfolioCard key={item.slug} item={item} />
+          ))}
+        </div>
+      </Section>
+
+      <FaqSection />
+      <FinalCta />
+    </>
+  );
+}

@@ -1,0 +1,103 @@
+@import "tailwindcss";
+
+:root {
+  --background: #fbfaf6;
+  --foreground: #1f2a2e;
+  --muted: #687579;
+  --line: #dfe8e8;
+  --accent: #2d8c83;
+  --accent-foreground: #ffffff;
+  --ivory: #fbfaf6;
+  --off-white: #ffffff;
+  --pale-blue: #eaf4f7;
+  --pale-mint: #e8f4ee;
+  --soft-beige: #f3ece0;
+  --ink: #1f2a2e;
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-muted: var(--muted);
+  --color-line: var(--line);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-ivory: var(--ivory);
+  --color-pale-blue: var(--pale-blue);
+  --color-pale-mint: var(--pale-mint);
+  --color-soft-beige: var(--soft-beige);
+  --color-ink: var(--ink);
+  --font-sans: var(--font-sans-kr);
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
+
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    scroll-behavior: auto !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+body {
+  min-width: 320px;
+  background:
+    radial-gradient(circle at top left, rgba(234, 244, 247, 0.9), transparent 32rem),
+    linear-gradient(180deg, #fbfaf6 0%, #ffffff 48%, #fbfaf6 100%);
+  color: var(--foreground);
+  font-family: var(--font-sans-kr), Pretendard, -apple-system, BlinkMacSystemFont, "Segoe UI",
+    sans-serif;
+  letter-spacing: 0;
+}
+
+a,
+button,
+input,
+select,
+textarea {
+  outline-color: var(--accent);
+}
+
+::selection {
+  background: rgba(45, 140, 131, 0.18);
+}
+
+.container-page {
+  width: min(1120px, calc(100% - 40px));
+  margin-inline: auto;
+}
+
+.surface {
+  border: 1px solid rgba(31, 42, 46, 0.08);
+  background: rgba(255, 255, 255, 0.78);
+  backdrop-filter: blur(18px);
+}
+
+.fade-up {
+  animation: fade-up 640ms ease both;
+}
+
+@keyframes fade-up {
+  from {
+    opacity: 0;
+    transform: translateY(18px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
