@@ -11,7 +11,7 @@ export function generateMetadata() {
   return createPublicMetadata({
     title: "가격 및 상품",
     description:
-      "부산·경남 로컬 마케팅 상품 구조와 결제 가능 여부를 확인하세요. 맞춤형 상품은 무료 진단 또는 상담 후 안내합니다.",
+      "부산·경남 로컬 마케팅은 업체별 업종, 지역, 경쟁 상황, 진행 범위에 따라 견적이 달라집니다. 카카오톡 문의 상담으로 현재 상황을 남겨주세요.",
     path: "/pricing",
   });
 }
@@ -25,8 +25,8 @@ export default async function PricingPage() {
       <Section className="pt-12 sm:pt-16">
         <SectionHeading
           eyebrow="Pricing"
-          title="가격은 아직 확정하지 않았습니다"
-          description="업종, 지역, 경쟁 강도, 필요한 채널 범위가 다르기 때문에 현재 단계에서는 임의 가격을 만들지 않습니다. 상품 구조만 먼저 확인할 수 있습니다."
+          title="업체 상황에 따라 견적이 달라집니다"
+          description="업종, 지역, 경쟁 강도, 필요한 채널 범위가 모두 다르기 때문에 정해진 단일 가격표보다 현재 상황 확인이 먼저 필요합니다. 카카오톡 문의 상담으로 업체명과 고민을 남겨주시면 가능한 범위와 견적 방향을 안내합니다."
         />
         {products.length ? (
           <div className="grid gap-5 lg:grid-cols-3">
@@ -40,7 +40,7 @@ export default async function PricingPage() {
           </div>
         )}
         <div className="mt-8 rounded-[8px] border border-line bg-white p-5 text-sm leading-7 text-muted">
-          바로 결제가 가능한 상품은 결제 화면으로 이동합니다. 상담이 필요한 상품은 서비스 범위와 업종 상황을 먼저 확인한 뒤 진행합니다.
+          세부 견적은 상담 후 안내합니다. 카카오톡 문의 상담에 업체명, 업종, 지역, 원하는 서비스를 남겨주시면 확인 후 진행 가능 범위와 견적을 안내합니다.
         </div>
       </Section>
       <FinalCta />
