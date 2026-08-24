@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { getSupabaseServerClient } from "@/lib/supabase";
+import { sendLeadTelegramNotification } from "@/lib/notifications/telegram";
 import { leadSchema, toLeadInsert } from "@/lib/validations";
 
 export async function POST(request: Request) {
@@ -75,6 +76,8 @@ export async function POST(request: Request) {
       { status: 500 },
     );
   }
+
+  await sendLeadTelegramNotification(values);
 
   return NextResponse.json({ ok: true, stored: true });
 }
