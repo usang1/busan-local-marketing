@@ -1,9 +1,10 @@
 export const BRAND = {
-  name: "브랜드명",
+  name: "markivo",
+  origin: "marketing + evolution",
   tagline: "매출로 연결되는 로컬 마케팅",
   region: "부산·경남",
   description:
-    "부산·경남 자영업자와 로컬 비즈니스를 위한 네이버 플레이스 중심 마케팅 파트너",
+    "marketing과 evolution을 결합한 markivo는 부산·경남 자영업자와 로컬 비즈니스를 위한 네이버 플레이스 중심 마케팅 파트너입니다.",
 };
 
 export const SITE = {

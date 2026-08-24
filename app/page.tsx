@@ -47,12 +47,19 @@ export default async function Home() {
             <p className="mb-4 inline-flex rounded-[6px] bg-pale-mint px-3 py-1 text-sm font-bold text-accent">
               {BRAND.region} 로컬 비즈니스 대상
             </p>
+            <div className="mb-5 flex w-fit items-center gap-3 rounded-[8px] border border-line bg-white px-3 py-2 shadow-[0_12px_34px_rgba(31,42,46,0.07)]">
+              <Image src="/markivo-logo.svg" alt={BRAND.name} className="h-11 w-auto" width={153} height={44} />
+              <span className="hidden text-xs font-bold uppercase tracking-[0.16em] text-accent sm:inline">
+                {BRAND.origin}
+              </span>
+            </div>
             <h1 className="text-balance text-4xl font-extrabold leading-tight text-ink sm:text-5xl lg:text-6xl">
               검색 노출이 아니라
               <br />
               매출까지 연결되는 로컬 마케팅
             </h1>
             <p className="mt-6 max-w-2xl text-pretty text-lg leading-8 text-muted">
+              {BRAND.name}는 marketing과 evolution을 결합한 로컬 마케팅 브랜드입니다.
               네이버 플레이스에서 고객이 검색하고, 클릭하고, 신뢰하고, 전화·예약·방문까지
               이어지는 과정을 함께 점검합니다. 광고 계약 전에 현재 플레이스 상태부터
               확인하세요.
