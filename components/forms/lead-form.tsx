@@ -29,7 +29,17 @@ function FieldError({ message }: { message?: string }) {
   return <p className="mt-2 text-sm font-medium text-red-700">{message}</p>;
 }
 
-export function LeadForm({ type }: { type: LeadType }) {
+export function LeadForm({
+  type,
+  initialValues = {},
+  auditId,
+  kakaoChatUrl,
+}: {
+  type: LeadType;
+  initialValues?: Partial<LeadFormValues>;
+  auditId?: string;
+  kakaoChatUrl?: string;
+}) {
   const [success, setSuccess] = useState(false);
   const [serverError, setServerError] = useState("");
   const [started, setStarted] = useState(false);
@@ -60,6 +70,8 @@ export function LeadForm({ type }: { type: LeadType }) {
       preferredContactTime: "",
       message: "",
       ...attribution,
+      ...initialValues,
+      auditId: auditId || initialValues.auditId || "",
       privacyConsent: false,
       companyWebsite: "",
       formStartedAt,
@@ -103,7 +115,7 @@ export function LeadForm({ type }: { type: LeadType }) {
   }
 
   if (success) {
-    return <SuccessState type={type} />;
+    return <SuccessState type={type} kakaoChatUrl={kakaoChatUrl} />;
   }
 
   return (
@@ -115,6 +127,7 @@ export function LeadForm({ type }: { type: LeadType }) {
     >
       <input type="hidden" {...register("leadType")} value={type} />
       <input type="hidden" {...register("formStartedAt")} value={formStartedAt} />
+      <input type="hidden" {...register("auditId")} />
       <input type="hidden" {...register("utmSource")} />
       <input type="hidden" {...register("utmMedium")} />
       <input type="hidden" {...register("utmCampaign")} />

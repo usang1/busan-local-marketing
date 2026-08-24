@@ -1,18 +1,24 @@
 import { ClipboardCheck } from "lucide-react";
 import { LeadForm } from "@/components/forms/lead-form";
+import { PlaceAuditForm } from "@/components/forms/place-audit-form";
 import { FaqSection } from "@/components/sections/faq-section";
 import { Section, SectionHeading } from "@/components/ui/section";
 import { auditItems } from "@/data/services";
-import { createMetadata } from "@/lib/seo";
+import { getPublicSiteProfile } from "@/lib/public/site-config";
+import { createPublicMetadata } from "@/lib/seo";
 
-export const metadata = createMetadata({
-  title: "무료 네이버 플레이스 진단",
-  description:
-    "부산·경남 매장의 네이버 플레이스 검색 노출, 대표사진, 리뷰, 정보, 경쟁업체, 전환 동선을 담당자가 확인 후 상담합니다.",
-  path: "/free-audit",
-});
+export function generateMetadata() {
+  return createPublicMetadata({
+    title: "무료 네이버 플레이스 진단",
+    description:
+      "부산·경남 매장의 네이버 플레이스 검색 노출, 대표사진, 리뷰, 정보, 경쟁업체, 전환 동선을 담당자가 확인 후 상담합니다.",
+    path: "/free-audit",
+  });
+}
 
-export default function FreeAuditPage() {
+export default async function FreeAuditPage() {
+  const { brand, site } = await getPublicSiteProfile();
+
   return (
     <>
       <Section className="pt-12 sm:pt-16">
@@ -27,21 +33,31 @@ export default function FreeAuditPage() {
               어디에서 고객을 놓치고 있을까요?
             </h1>
             <p className="mt-5 text-lg leading-8 text-muted">
-              광고를 시작하기 전에 현재 플레이스 상태부터 확인하세요. 검색 노출,
-              대표사진, 리뷰, 플레이스 정보, 경쟁업체, 고객 전환 요소를 담당자가 확인한
-              뒤 상담으로 안내합니다.
+              광고를 시작하기 전에 현재 플레이스 상태부터 확인하세요. 입력한 정보를 기준으로
+              기본 자동진단 결과를 먼저 보고, 필요한 경우 상세 진단과 상담으로 이어갈 수 있습니다.
             </p>
             <div className="mt-7 rounded-[8px] border border-line bg-white p-5">
               <div className="flex gap-3">
                 <ClipboardCheck className="mt-1 text-accent" size={22} aria-hidden="true" />
                 <p className="text-sm leading-7 text-muted">
-                  이 페이지는 실시간 자동 분석 결과를 제공하지 않습니다. 입력해주신 정보를
-                  바탕으로 담당자가 확인 후 연락드리는 무료 진단 신청입니다.
+                  네이버 데이터를 자동 수집하거나 확인되지 않은 순위를 제공하지 않습니다. 사용자가
+                  직접 입력한 상태를 Rule 기반으로 분석하고, 실제 화면 확인은 상담 단계에서 진행합니다.
                 </p>
               </div>
             </div>
           </div>
-          <LeadForm type="free_audit" />
+          <PlaceAuditForm brandName={brand.name} />
+        </div>
+      </Section>
+
+      <Section>
+        <div className="grid gap-10 lg:grid-cols-[0.82fr_1.18fr] lg:items-start">
+          <SectionHeading
+            eyebrow="Expert Review"
+            title="자동진단 없이 바로 상세 진단을 신청할 수도 있습니다"
+            description="기존 무료진단 Funnel은 그대로 유지합니다. 업체 정보와 플레이스 URL을 남겨주시면 담당자가 확인 후 상담합니다."
+          />
+          <LeadForm type="free_audit" kakaoChatUrl={site.kakaoChatUrl} />
         </div>
       </Section>
 

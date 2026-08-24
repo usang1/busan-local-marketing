@@ -2,8 +2,11 @@ import { ClipboardCheck } from "lucide-react";
 import { ButtonLink } from "@/components/ui/button";
 import { KakaoCta } from "@/components/ui/kakao-cta";
 import { ANALYTICS_EVENTS } from "@/lib/analytics/events";
+import { getPublicSiteProfile } from "@/lib/public/site-config";
 
-export function FinalCta() {
+export async function FinalCta() {
+  const { site } = await getPublicSiteProfile();
+
   return (
     <section className="bg-ink py-16 text-white sm:py-20">
       <div className="container-page grid gap-8 md:grid-cols-[1fr_auto] md:items-center">
@@ -24,7 +27,12 @@ export function FinalCta() {
             <ClipboardCheck size={19} aria-hidden="true" />
             무료 진단 신청
           </ButtonLink>
-          <KakaoCta variant="outline" className="border-white/25 bg-white/10 text-white hover:bg-white/16" location="final_cta" />
+          <KakaoCta
+            variant="outline"
+            className="border-white/25 bg-white/10 text-white hover:bg-white/16"
+            location="final_cta"
+            kakaoChatUrl={site.kakaoChatUrl}
+          />
         </div>
       </div>
     </section>

@@ -6,7 +6,7 @@ import { ButtonLink } from "@/components/ui/button";
 import { KakaoCta } from "@/components/ui/kakao-cta";
 import { ANALYTICS_EVENTS } from "@/lib/analytics/events";
 
-export function MobileStickyCta() {
+export function MobileStickyCta({ kakaoChatUrl }: { kakaoChatUrl?: string }) {
   const pathname = usePathname();
   const hiddenRoutes = ["/free-audit", "/contact", "/checkout", "/admin"];
 
@@ -21,7 +21,7 @@ export function MobileStickyCta() {
           <ClipboardCheck size={17} aria-hidden="true" />
           무료 진단
         </ButtonLink>
-        <KakaoCta label="카카오 상담" size="sm" className="w-full" location="sticky_mobile" />
+        <KakaoCta label="카카오 상담" size="sm" className="w-full" location="sticky_mobile" kakaoChatUrl={kakaoChatUrl} />
       </div>
     </div>
   );

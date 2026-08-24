@@ -6,6 +6,7 @@ import { ANALYTICS_EVENTS } from "@/lib/analytics/events";
 
 export function PricingCard({
   plan,
+  kakaoChatUrl,
 }: {
   plan: {
     id?: string;
@@ -19,6 +20,7 @@ export function PricingCard({
     slug?: string;
     featured?: boolean;
   };
+  kakaoChatUrl?: string;
 }) {
   return (
     <article
@@ -45,7 +47,7 @@ export function PricingCard({
         ))}
       </ul>
       {plan.href === "kakao" ? (
-        <KakaoCta label={plan.cta} className="mt-7 w-full" location="pricing" />
+        <KakaoCta label={plan.cta} className="mt-7 w-full" location="pricing" kakaoChatUrl={kakaoChatUrl} />
       ) : (
         <ButtonLink
           href={plan.href}

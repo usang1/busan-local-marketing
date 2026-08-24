@@ -2,7 +2,7 @@ import { CheckCircle2 } from "lucide-react";
 import { ButtonLink } from "@/components/ui/button";
 import { KakaoCta } from "@/components/ui/kakao-cta";
 
-export function SuccessState({ type }: { type: "free_audit" | "consultation" }) {
+export function SuccessState({ type, kakaoChatUrl }: { type: "free_audit" | "consultation"; kakaoChatUrl?: string }) {
   const isAudit = type === "free_audit";
 
   return (
@@ -17,7 +17,7 @@ export function SuccessState({ type }: { type: "free_audit" | "consultation" }) 
           : "업체 정보와 문의 내용을 확인한 뒤 가능한 시간에 연락드릴 수 있도록 준비합니다."}
       </p>
       <div className="mt-6 grid gap-3 sm:grid-cols-2">
-        <KakaoCta label="카카오톡으로 추가 문의" />
+        <KakaoCta label="카카오톡으로 추가 문의" kakaoChatUrl={kakaoChatUrl} />
         <ButtonLink href="/services" variant="outline">
           서비스 살펴보기
         </ButtonLink>

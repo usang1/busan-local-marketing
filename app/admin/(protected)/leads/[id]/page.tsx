@@ -6,7 +6,8 @@ import { LeadEditor } from "@/components/admin/lead-editor";
 import { StatusBadge } from "@/components/admin/status-badge";
 import { leadTypeLabels } from "@/lib/admin/constants";
 import { formatDateTime, formatPrice, isSafeHttpUrl } from "@/lib/admin/format";
-import { getLead, getLeadOrders } from "@/lib/admin/db";
+import { getLead, getLeadAudit, getLeadOrders } from "@/lib/admin/db";
+import type { AuditResult } from "@/lib/audit/rules";
 
 function InfoRow({ label, value }: { label: string; value?: string | null }) {
   return (
@@ -19,7 +20,7 @@ function InfoRow({ label, value }: { label: string; value?: string | null }) {
 
 export default async function LeadDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
-  const [{ data: lead, error }, ordersResult] = await Promise.all([getLead(id), getLeadOrders(id)]);
+  const [{ data: lead, error }, ordersResult, auditResult] = await Promise.all([getLead(id), getLeadOrders(id), getLeadAudit(id)]);
   const paidOrders = ordersResult.data.filter((order) => order.status === "paid");
   const firstPaidAt = paidOrders
     .map((order) => order.paid_at)
@@ -100,6 +101,39 @@ export default async function LeadDetailPage({ params }: { params: Promise<{ id:
             </section>
 
             {ordersResult.error ? <AdminError message={ordersResult.error} /> : null}
+            {auditResult.error ? <AdminError message={auditResult.error} /> : null}
+            <section className="rounded-[8px] border border-slate-200 bg-white p-5">
+              <h2 className="text-lg font-extrabold text-slate-950">자동진단 결과</h2>
+              {auditResult.data ? (
+                <div className="mt-5 grid gap-5">
+                  <dl className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
+                    <InfoRow label="진단 실시 여부" value="실시" />
+                    <InfoRow label="진단일" value={formatDateTime(auditResult.data.created_at)} />
+                    <InfoRow label="상담 전환 여부" value={auditResult.data.lead_id ? "전환됨" : "미전환"} />
+                    <InfoRow label="입력 업체명" value={auditResult.data.business_name} />
+                    <InfoRow label="입력 업종" value={auditResult.data.industry} />
+                    <InfoRow label="입력 지역" value={auditResult.data.region} />
+                  </dl>
+                  <div className="rounded-[8px] bg-slate-50 p-4">
+                    <p className="text-xs font-bold uppercase text-slate-500">핵심 결과</p>
+                    <p className="mt-2 text-sm leading-6 text-slate-900">
+                      {(auditResult.data.result_data as unknown as AuditResult).summary || "-"}
+                    </p>
+                  </div>
+                  <div>
+                    <p className="text-xs font-bold uppercase text-slate-500">우선 개선사항</p>
+                    <ul className="mt-3 grid gap-2 text-sm leading-6 text-slate-700">
+                      {((auditResult.data.result_data as unknown as AuditResult).priorityImprovements || []).map((item) => (
+                        <li key={`${item.area}-${item.label}`}>· {item.label}: {item.summary}</li>
+                      ))}
+                    </ul>
+                  </div>
+                </div>
+              ) : (
+                <p className="mt-4 text-sm leading-6 text-slate-600">이 Lead와 연결된 자동진단 이력이 없습니다.</p>
+              )}
+            </section>
+
             <section className="rounded-[8px] border border-slate-200 bg-white p-5">
               <h2 className="text-lg font-extrabold text-slate-950">연결 주문 / 매출</h2>
               {ordersResult.data.length ? (

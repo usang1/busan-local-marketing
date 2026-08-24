@@ -58,6 +58,7 @@ export const leadSchema = z.object({
     .refine((value) => value, "개인정보 수집 및 이용에 동의해주세요."),
   companyWebsite: z.string().optional(),
   formStartedAt: z.string().optional(),
+  auditId: z.string().uuid().optional().or(z.literal("")),
 });
 
 export type LeadFormValues = z.infer<typeof leadSchema>;

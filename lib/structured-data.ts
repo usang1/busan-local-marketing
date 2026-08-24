@@ -1,24 +1,33 @@
 import { BRAND, SITE } from "@/config/site";
+import type { PublicBrandConfig, PublicSiteConfig } from "@/lib/public/site-config";
 
-function hasConfiguredBrand() {
-  return Boolean(BRAND.name && BRAND.name !== "브랜드명");
+const FALLBACK_SITE: PublicSiteConfig = { ...SITE, businessName: "", address: "" };
+
+function hasConfiguredBrand(brand = BRAND) {
+  return Boolean(brand.name && brand.name !== "브랜드명");
 }
 
-export function organizationJsonLd() {
-  if (!hasConfiguredBrand()) return null;
+export function organizationJsonLd({
+  brand = BRAND,
+  site = FALLBACK_SITE,
+}: {
+  brand?: PublicBrandConfig;
+  site?: PublicSiteConfig;
+} = {}) {
+  if (!hasConfiguredBrand(brand)) return null;
 
   return {
     "@context": "https://schema.org",
     "@type": "Organization",
-    name: BRAND.name,
-    url: SITE.url,
-    description: BRAND.description,
+    name: brand.name,
+    url: site.url,
+    description: brand.description,
     areaServed: ["부산", "경남"],
-    contactPoint: SITE.email || SITE.phone
+    contactPoint: site.email || site.phone
       ? {
           "@type": "ContactPoint",
-          telephone: SITE.phone || undefined,
-          email: SITE.email || undefined,
+          telephone: site.phone || undefined,
+          email: site.email || undefined,
           contactType: "customer service",
           areaServed: ["KR-26", "KR-48"],
           availableLanguage: ["ko"],
@@ -27,15 +36,21 @@ export function organizationJsonLd() {
   };
 }
 
-export function professionalServiceJsonLd() {
-  if (!hasConfiguredBrand()) return null;
+export function professionalServiceJsonLd({
+  brand = BRAND,
+  site = FALLBACK_SITE,
+}: {
+  brand?: PublicBrandConfig;
+  site?: PublicSiteConfig;
+} = {}) {
+  if (!hasConfiguredBrand(brand)) return null;
 
   return {
     "@context": "https://schema.org",
     "@type": "ProfessionalService",
-    name: BRAND.name,
-    url: SITE.url,
-    description: BRAND.description,
+    name: brand.name,
+    url: site.url,
+    description: brand.description,
     areaServed: ["부산", "경남"],
     serviceType: ["네이버 플레이스 마케팅", "로컬 SEO", "로컬 비즈니스 마케팅"],
   };
@@ -45,10 +60,14 @@ export function serviceJsonLd({
   name,
   description,
   path,
+  brand = BRAND,
+  site = FALLBACK_SITE,
 }: {
   name: string;
   description: string;
   path: string;
+  brand?: PublicBrandConfig;
+  site?: PublicSiteConfig;
 }) {
   return {
     "@context": "https://schema.org",
@@ -57,11 +76,11 @@ export function serviceJsonLd({
     description,
     provider: {
       "@type": "Organization",
-      name: hasConfiguredBrand() ? BRAND.name : undefined,
-      url: SITE.url,
+      name: hasConfiguredBrand(brand) ? brand.name : undefined,
+      url: site.url,
     },
     areaServed: ["부산", "경남"],
-    url: `${SITE.url}${path}`,
+    url: `${site.url}${path}`,
   };
 }
 

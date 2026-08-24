@@ -4,9 +4,9 @@ import { JsonLd } from "@/components/seo/json-ld";
 import { FinalCta } from "@/components/sections/final-cta";
 import { ButtonLink } from "@/components/ui/button";
 import { Section, SectionHeading } from "@/components/ui/section";
-import { BRAND } from "@/config/site";
 import { ANALYTICS_EVENTS } from "@/lib/analytics/events";
-import { createMetadata } from "@/lib/seo";
+import { getPublicSiteProfile } from "@/lib/public/site-config";
+import { createPublicMetadata } from "@/lib/seo";
 import { faqJsonLd, serviceJsonLd } from "@/lib/structured-data";
 
 const checkItems = [
@@ -45,7 +45,8 @@ const process = [
   "전화, 예약, 길찾기 등 전환 지표 확인",
 ];
 
-const faqs = [
+function getFaqs(region: string) {
+  return [
   {
     question: "네이버 플레이스 순위를 보장하나요?",
     answer: "순위 보장은 하지 않습니다. 검색 노출뿐 아니라 클릭, 신뢰, 예약, 방문까지 이어지는 요소를 함께 점검하고 개선합니다.",
@@ -60,18 +61,24 @@ const faqs = [
   },
   {
     question: "부산 외 지역도 상담할 수 있나요?",
-    answer: `${BRAND.region}을 우선으로 하지만, 업종과 목표에 따라 다른 지역도 상담할 수 있습니다.`,
+    answer: `${region}을 우선으로 하지만, 업종과 목표에 따라 다른 지역도 상담할 수 있습니다.`,
   },
-];
+  ];
+}
 
-export const metadata = createMetadata({
-  title: "네이버 플레이스 마케팅",
-  description:
-    "부산·경남 사업자를 위한 네이버 플레이스 마케팅. 검색 노출, 대표사진, 리뷰, 경쟁업체, 예약·전화 동선을 함께 점검합니다.",
-  path: "/services/naver-place",
-});
+export function generateMetadata() {
+  return createPublicMetadata({
+    title: "네이버 플레이스 마케팅",
+    description:
+      "부산·경남 사업자를 위한 네이버 플레이스 마케팅. 검색 노출, 대표사진, 리뷰, 경쟁업체, 예약·전화 동선을 함께 점검합니다.",
+    path: "/services/naver-place",
+  });
+}
 
-export default function NaverPlaceServicePage() {
+export default async function NaverPlaceServicePage() {
+  const { brand, site } = await getPublicSiteProfile();
+  const faqs = getFaqs(brand.region);
+
   return (
     <>
       <Breadcrumbs items={[{ name: "서비스", href: "/services" }, { name: "네이버 플레이스", href: "/services/naver-place" }]} />
@@ -81,6 +88,8 @@ export default function NaverPlaceServicePage() {
             name: "네이버 플레이스 마케팅",
             description: "부산·경남 로컬 비즈니스의 네이버 플레이스 검색, 클릭, 신뢰, 문의, 방문 전환 요소를 점검하고 개선합니다.",
             path: "/services/naver-place",
+            brand,
+            site,
           }),
           faqJsonLd(faqs),
         ]}
@@ -95,7 +104,7 @@ export default function NaverPlaceServicePage() {
             </h1>
             <p className="mt-5 max-w-2xl text-lg leading-8 text-muted">
               검색 화면에서 클릭되고, 플레이스에서 신뢰를 얻고, 전화·예약·길찾기로 이어지는 흐름을 함께 봐야 합니다.
-              {BRAND.region} 사업자의 현재 플레이스 상태부터 확인합니다.
+              {brand.region} 사업자의 현재 플레이스 상태부터 확인합니다.
             </p>
             <div className="mt-8 flex flex-col gap-3 sm:flex-row">
               <ButtonLink href="/free-audit" size="lg" data-analytics-event={ANALYTICS_EVENTS.CLICK_FREE_AUDIT} data-analytics-location="naver_place_hero">

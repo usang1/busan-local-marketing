@@ -3,18 +3,21 @@ import { PricingCard } from "@/components/sections/pricing-card";
 import { Section, SectionHeading } from "@/components/ui/section";
 import { PageEvent } from "@/components/analytics/page-event";
 import { ANALYTICS_EVENTS } from "@/lib/analytics/events";
-import { createMetadata } from "@/lib/seo";
+import { getPublicSiteProfile } from "@/lib/public/site-config";
+import { createPublicMetadata } from "@/lib/seo";
 import { getPublicProducts } from "@/lib/public/content";
 
-export const metadata = createMetadata({
-  title: "가격 및 상품",
-  description:
-    "부산·경남 로컬 마케팅 상품 구조와 결제 가능 여부를 확인하세요. 맞춤형 상품은 무료 진단 또는 상담 후 안내합니다.",
-  path: "/pricing",
-});
+export function generateMetadata() {
+  return createPublicMetadata({
+    title: "가격 및 상품",
+    description:
+      "부산·경남 로컬 마케팅 상품 구조와 결제 가능 여부를 확인하세요. 맞춤형 상품은 무료 진단 또는 상담 후 안내합니다.",
+    path: "/pricing",
+  });
+}
 
 export default async function PricingPage() {
-  const products = await getPublicProducts();
+  const [{ site }, products] = await Promise.all([getPublicSiteProfile(), getPublicProducts()]);
 
   return (
     <>
@@ -28,7 +31,7 @@ export default async function PricingPage() {
         {products.length ? (
           <div className="grid gap-5 lg:grid-cols-3">
           {products.map((plan) => (
-            <PricingCard key={plan.name} plan={plan} />
+            <PricingCard key={plan.name} plan={plan} kakaoChatUrl={site.kakaoChatUrl} />
           ))}
           </div>
         ) : (

@@ -1,16 +1,21 @@
+import { ArrowRight } from "lucide-react";
+import Link from "next/link";
 import { FinalCta } from "@/components/sections/final-cta";
 import { ServiceCard } from "@/components/sections/service-card";
 import { ButtonLink } from "@/components/ui/button";
 import { Section, SectionHeading } from "@/components/ui/section";
+import { marketingIndustryPages } from "@/data/marketing-industries";
 import { getServicesByCategory, processSteps, serviceCategoryDescriptions, serviceCategoryOrder } from "@/data/services";
-import { createMetadata } from "@/lib/seo";
+import { createPublicMetadata } from "@/lib/seo";
 
-export const metadata = createMetadata({
-  title: "서비스",
-  description:
-    "네이버 플레이스, 로컬 SEO, 블로그, 숏폼, 샤오홍슈, 전환 최적화까지 부산·경남 로컬 마케팅 서비스를 안내합니다.",
-  path: "/services",
-});
+export function generateMetadata() {
+  return createPublicMetadata({
+    title: "서비스",
+    description:
+      "네이버 플레이스, 로컬 SEO, 블로그, 숏폼, 샤오홍슈, 전환 최적화까지 부산·경남 로컬 마케팅 서비스를 안내합니다.",
+    path: "/services",
+  });
+}
 
 export default function ServicesPage() {
   return (
@@ -58,6 +63,37 @@ export default function ServicesPage() {
               </div>
             );
           })}
+        </div>
+      </Section>
+
+      <Section>
+        <div className="mb-10 flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
+          <SectionHeading
+            eyebrow="Industry Landing"
+            title="업종별 검색 의도에 맞춰 다시 확인하세요"
+            description="음식점, 병원, 카페, 뷰티 업종은 고객이 비교하는 정보와 전환 동선이 다릅니다. 서비스 선택 전 업종별 우선순위를 먼저 확인할 수 있습니다."
+          />
+          <ButtonLink href="/free-audit" variant="outline" className="w-fit">
+            무료 자동진단 시작
+            <ArrowRight size={16} aria-hidden="true" />
+          </ButtonLink>
+        </div>
+        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+          {marketingIndustryPages.map((industry) => (
+            <Link
+              key={industry.slug}
+              href={industry.path}
+              className="rounded-[8px] border border-line bg-white p-5 transition hover:-translate-y-1 hover:border-accent/30 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-accent/20"
+            >
+              <p className="text-xs font-extrabold text-accent">{industry.label}</p>
+              <h2 className="mt-2 text-lg font-bold leading-7 text-ink">{industry.seoTitle}</h2>
+              <p className="mt-3 text-sm leading-7 text-muted">{industry.heroTitle}</p>
+              <span className="mt-5 inline-flex items-center gap-2 text-sm font-bold text-accent">
+                업종별 전략 보기
+                <ArrowRight size={16} aria-hidden="true" />
+              </span>
+            </Link>
+          ))}
         </div>
       </Section>
 

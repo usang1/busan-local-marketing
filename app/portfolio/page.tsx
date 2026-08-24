@@ -1,15 +1,17 @@
 import { FinalCta } from "@/components/sections/final-cta";
 import { PortfolioCard } from "@/components/sections/portfolio-card";
 import { Section, SectionHeading } from "@/components/ui/section";
-import { createMetadata } from "@/lib/seo";
+import { createPublicMetadata } from "@/lib/seo";
 import { getPublicPortfolios } from "@/lib/public/content";
 
-export const metadata = createMetadata({
-  title: "포트폴리오",
-  description:
-    "부산·경남 로컬 비즈니스 네이버 플레이스 마케팅 사례 구조를 Case Study 형식으로 확인하세요. 허위 성과 없이 준비 중인 자료를 명확히 표시합니다.",
-  path: "/portfolio",
-});
+export function generateMetadata() {
+  return createPublicMetadata({
+    title: "포트폴리오",
+    description:
+      "부산·경남 로컬 비즈니스 네이버 플레이스 마케팅 사례 구조를 Case Study 형식으로 확인하세요. 허위 성과 없이 준비 중인 자료를 명확히 표시합니다.",
+    path: "/portfolio",
+  });
+}
 
 export default async function PortfolioPage() {
   const portfolios = await getPublicPortfolios();

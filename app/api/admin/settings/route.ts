@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { revalidatePath } from "next/cache";
 import { requireAdmin } from "@/lib/admin/auth";
 import { siteSettingsSchema } from "@/lib/admin/validations";
 import { getSupabaseServerClient } from "@/lib/supabase";
@@ -27,5 +28,6 @@ export async function PATCH(request: Request) {
   });
 
   if (error) return NextResponse.json({ message: "설정을 저장하지 못했습니다." }, { status: 500 });
+  revalidatePath("/", "layout");
   return NextResponse.json({ ok: true });
 }

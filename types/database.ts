@@ -104,6 +104,20 @@ export type Order = {
   products?: Pick<Product, "name" | "slug" | "price_label"> | null;
 };
 
+export type Audit = {
+  id: string;
+  lead_id: string | null;
+  business_name: string;
+  industry: string;
+  region: string;
+  place_url: string | null;
+  input_data: Record<string, unknown>;
+  result_data: Record<string, unknown>;
+  status: "completed" | "consultation_requested" | "archived";
+  created_at: string;
+  updated_at: string;
+};
+
 export type SiteSettings = {
   id: string;
   brand_name: string | null;

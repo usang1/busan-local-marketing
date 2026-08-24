@@ -1,7 +1,7 @@
 import { getSupabaseServerClient } from "@/lib/supabase";
 import { funnelStatuses } from "@/lib/admin/constants";
 import type { LeadStatus, LeadType } from "@/types/lead";
-import type { Lead, Order, Portfolio, Product, SiteSettings } from "@/types/database";
+import type { Audit, Lead, Order, Portfolio, Product, SiteSettings } from "@/types/database";
 
 export type LeadListParams = {
   page?: number;
@@ -371,6 +371,29 @@ export async function getLeadOrders(leadId: string) {
     .order("created_at", { ascending: false });
 
   return { data: (data || []) as Order[], error: error ? "연결 주문을 불러오지 못했습니다." : null };
+}
+
+export async function getLeadAudit(leadId: string) {
+  const supabase = await getSupabaseServerClient();
+  if (!supabase) return { data: null as Audit | null, error: "Supabase 환경변수가 없습니다." };
+
+  const { data, error } = await supabase
+    .from("audits")
+    .select("*")
+    .eq("lead_id", leadId)
+    .order("created_at", { ascending: false })
+    .limit(1)
+    .maybeSingle();
+
+  return { data: (data as Audit | null) || null, error: error ? "자동진단 결과를 불러오지 못했습니다." : null };
+}
+
+export async function getAuditById(id: string) {
+  const supabase = await getSupabaseServerClient();
+  if (!supabase) return { data: null as Audit | null, error: "Supabase 환경변수가 없습니다." };
+
+  const { data, error } = await supabase.from("audits").select("*").eq("id", id).maybeSingle();
+  return { data: (data as Audit | null) || null, error: error ? "자동진단 결과를 불러오지 못했습니다." : null };
 }
 
 export async function listOrders() {

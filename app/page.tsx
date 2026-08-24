@@ -1,5 +1,7 @@
 import Image from "next/image";
+import Link from "next/link";
 import { ArrowRight, ClipboardCheck, MapPin, MousePointerClick, PhoneCall, Search, Star } from "lucide-react";
+import { BrandLogo } from "@/components/layout/brand-logo";
 import { ButtonLink } from "@/components/ui/button";
 import { KakaoCta } from "@/components/ui/kakao-cta";
 import { Section, SectionHeading } from "@/components/ui/section";
@@ -7,17 +9,20 @@ import { ServiceCard } from "@/components/sections/service-card";
 import { PortfolioCard } from "@/components/sections/portfolio-card";
 import { FaqSection } from "@/components/sections/faq-section";
 import { FinalCta } from "@/components/sections/final-cta";
-import { BRAND } from "@/config/site";
-import { createMetadata } from "@/lib/seo";
+import { createPublicMetadata } from "@/lib/seo";
+import { marketingIndustryPages } from "@/data/marketing-industries";
 import { processSteps, serviceGroups } from "@/data/services";
 import { getFeaturedPublicPortfolios } from "@/lib/public/content";
+import { getPublicSiteProfile } from "@/lib/public/site-config";
 import { ANALYTICS_EVENTS } from "@/lib/analytics/events";
 
-export const metadata = createMetadata({
-  title: "부산·경남 네이버 플레이스 광고대행",
-  description:
-    "부산·경남 자영업자와 로컬 비즈니스를 위한 네이버 플레이스 진단, 로컬 SEO, 블로그, 숏폼 콘텐츠 마케팅 상담 페이지입니다.",
-});
+export function generateMetadata() {
+  return createPublicMetadata({
+    title: "부산·경남 네이버 플레이스 광고대행",
+    description:
+      "부산·경남 자영업자와 로컬 비즈니스를 위한 네이버 플레이스 진단, 로컬 SEO, 블로그, 숏폼 콘텐츠 마케팅 상담 페이지입니다.",
+  });
+}
 
 const problems = [
   "플레이스 순위가 계속 떨어진다.",
@@ -37,7 +42,7 @@ const funnel = [
 ];
 
 export default async function Home() {
-  const featuredPortfolios = await getFeaturedPublicPortfolios();
+  const [{ brand, site }, featuredPortfolios] = await Promise.all([getPublicSiteProfile(), getFeaturedPublicPortfolios()]);
 
   return (
     <>
@@ -45,13 +50,10 @@ export default async function Home() {
         <div className="container-page grid gap-10 lg:grid-cols-[0.95fr_1.05fr] lg:items-center">
           <div className="fade-up">
             <p className="mb-4 inline-flex rounded-[6px] bg-pale-mint px-3 py-1 text-sm font-bold text-accent">
-              {BRAND.region} 로컬 비즈니스 대상
+              {brand.region} 로컬 비즈니스 대상
             </p>
             <div className="mb-5 flex w-fit items-center gap-3 rounded-[8px] border border-line bg-white px-3 py-2 shadow-[0_12px_34px_rgba(31,42,46,0.07)]">
-              <Image src="/markivo-logo.svg" alt={BRAND.name} className="h-11 w-auto" width={153} height={44} />
-              <span className="hidden text-xs font-bold uppercase tracking-[0.16em] text-accent sm:inline">
-                {BRAND.origin}
-              </span>
+              <BrandLogo brand={brand} />
             </div>
             <h1 className="text-balance text-4xl font-extrabold leading-tight text-ink sm:text-5xl lg:text-6xl">
               검색 노출이 아니라
@@ -59,7 +61,7 @@ export default async function Home() {
               매출까지 연결되는 로컬 마케팅
             </h1>
             <p className="mt-6 max-w-2xl text-pretty text-lg leading-8 text-muted">
-              {BRAND.name}는 marketing과 evolution을 결합한 로컬 마케팅 브랜드입니다.
+              {brand.name}는 marketing과 evolution을 결합한 로컬 마케팅 브랜드입니다.
               네이버 플레이스에서 고객이 검색하고, 클릭하고, 신뢰하고, 전화·예약·방문까지
               이어지는 과정을 함께 점검합니다. 광고 계약 전에 현재 플레이스 상태부터
               확인하세요.
@@ -69,7 +71,7 @@ export default async function Home() {
                 <ClipboardCheck size={19} aria-hidden="true" />
                 무료 플레이스 진단받기
               </ButtonLink>
-              <KakaoCta size="lg" location="hero" />
+              <KakaoCta size="lg" location="hero" kakaoChatUrl={site.kakaoChatUrl} />
             </div>
             <p className="mt-4 text-sm leading-6 text-muted">
               광고 계약 없이 현재 플레이스 상태부터 확인해보세요. 담당자가 확인 후 상담합니다.
@@ -95,6 +97,37 @@ export default async function Home() {
             <div key={problem} className="rounded-[8px] border border-line bg-white p-5">
               <p className="text-base font-bold leading-7 text-ink">{problem}</p>
             </div>
+          ))}
+        </div>
+      </Section>
+
+      <Section>
+        <div className="mb-10 flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
+          <SectionHeading
+            eyebrow="Industry"
+            title="업종별로 고객이 확인하는 정보가 다릅니다"
+            description="음식점, 병원, 카페, 뷰티 업종은 검색 방식과 예약 판단 기준이 다릅니다. 같은 플레이스라도 먼저 고쳐야 할 요소를 업종별로 나눠 봅니다."
+          />
+          <ButtonLink href="/free-audit" variant="outline" className="w-fit">
+            업종별 무료진단 시작
+            <ArrowRight size={16} aria-hidden="true" />
+          </ButtonLink>
+        </div>
+        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+          {marketingIndustryPages.map((industry) => (
+            <Link
+              key={industry.slug}
+              href={industry.path}
+              className="rounded-[8px] border border-line bg-white p-5 transition hover:-translate-y-1 hover:border-accent/30 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-accent/20"
+            >
+              <p className="text-xs font-extrabold text-accent">부산·경남 {industry.shortLabel}</p>
+              <h2 className="mt-2 text-xl font-bold leading-7 text-ink">{industry.seoTitle}</h2>
+              <p className="mt-3 text-sm leading-7 text-muted">{industry.heroTitle}</p>
+              <span className="mt-5 inline-flex items-center gap-2 text-sm font-bold text-accent">
+                업종 페이지 보기
+                <ArrowRight size={16} aria-hidden="true" />
+              </span>
+            </Link>
           ))}
         </div>
       </Section>

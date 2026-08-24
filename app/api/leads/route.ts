@@ -68,16 +68,31 @@ export async function POST(request: Request) {
     return NextResponse.json({ ok: true, stored: false, duplicate: true });
   }
 
-  const { error } = await supabase.from("leads").insert(toLeadInsert(values));
+  const { data: lead, error } = await supabase
+    .from("leads")
+    .insert(toLeadInsert(values))
+    .select("id")
+    .single();
 
-  if (error) {
+  if (error || !lead) {
     return NextResponse.json(
       { message: "접수 저장 중 문제가 발생했습니다. 잠시 후 다시 시도해주세요." },
       { status: 500 },
     );
   }
 
+  if (values.auditId) {
+    await supabase
+      .from("audits")
+      .update({
+        lead_id: lead.id,
+        status: "consultation_requested",
+        updated_at: new Date().toISOString(),
+      })
+      .eq("id", values.auditId);
+  }
+
   await sendLeadTelegramNotification(values);
 
-  return NextResponse.json({ ok: true, stored: true });
+  return NextResponse.json({ ok: true, stored: true, id: lead.id });
 }

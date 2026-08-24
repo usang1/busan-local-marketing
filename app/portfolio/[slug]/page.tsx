@@ -4,7 +4,7 @@ import { FinalCta } from "@/components/sections/final-cta";
 import { ButtonLink } from "@/components/ui/button";
 import { Section, SectionHeading } from "@/components/ui/section";
 import { portfolioCases } from "@/data/portfolio";
-import { createMetadata } from "@/lib/seo";
+import { createPublicMetadata } from "@/lib/seo";
 import { getPublicPortfolioBySlug } from "@/lib/public/content";
 
 export function generateStaticParams() {
@@ -19,7 +19,7 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
     return {};
   }
 
-  return createMetadata({
+  return createPublicMetadata({
     title: `${item.client} 사례`,
     description: `${item.industry} 업종의 로컬 마케팅 사례 구조입니다. 실제 성과 데이터는 확인 후 반영합니다.`,
     path: `/portfolio/${item.slug}`,

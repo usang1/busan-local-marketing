@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { ButtonLink } from "@/components/ui/button";
 import { KakaoCta } from "@/components/ui/kakao-cta";
 import { Section } from "@/components/ui/section";
+import { getPublicSiteProfile } from "@/lib/public/site-config";
 
 export const metadata: Metadata = {
   title: "결제 실패",
@@ -13,7 +14,7 @@ export default async function CheckoutFailPage({
 }: {
   searchParams: Promise<Record<string, string | undefined>>;
 }) {
-  const params = await searchParams;
+  const [params, { site }] = await Promise.all([searchParams, getPublicSiteProfile()]);
 
   return (
     <Section className="pt-12 sm:pt-16">
@@ -27,7 +28,7 @@ export default async function CheckoutFailPage({
         <div className="mt-6 grid gap-3 sm:grid-cols-3">
           <ButtonLink href="/pricing">상품으로 돌아가기</ButtonLink>
           <ButtonLink href="/pricing" variant="outline">다시 시도</ButtonLink>
-          <KakaoCta label="카카오톡 문의" />
+          <KakaoCta label="카카오톡 문의" kakaoChatUrl={site.kakaoChatUrl} />
         </div>
       </div>
     </Section>

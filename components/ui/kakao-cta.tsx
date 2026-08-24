@@ -9,19 +9,22 @@ export function KakaoCta({
   variant = "secondary",
   size = "md",
   location = "unknown",
+  kakaoChatUrl,
 }: {
   label?: string;
   className?: string;
   variant?: "primary" | "secondary" | "outline" | "ghost";
   size?: "sm" | "md" | "lg";
   location?: string;
+  kakaoChatUrl?: string | null;
 }) {
-  const hasUrl = Boolean(SITE.kakaoChatUrl);
+  const chatUrl = kakaoChatUrl ?? SITE.kakaoChatUrl;
+  const hasUrl = Boolean(chatUrl);
   const fallbackLabel = label.includes("카카오") ? "상담 문의하기" : label;
 
   return (
     <ButtonLink
-      href={hasUrl ? SITE.kakaoChatUrl : "/contact"}
+      href={hasUrl ? chatUrl : "/contact"}
       className={className}
       variant={variant}
       size={size}

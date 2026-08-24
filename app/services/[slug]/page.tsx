@@ -11,7 +11,7 @@ import {
   serviceDraftMetadataNote,
 } from "@/data/services";
 import { ANALYTICS_EVENTS } from "@/lib/analytics/events";
-import { createMetadata } from "@/lib/seo";
+import { createPublicMetadata } from "@/lib/seo";
 
 export function generateStaticParams() {
   return serviceDetailSlugs.map((slug) => ({ slug }));
@@ -25,7 +25,7 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
     return {};
   }
 
-  return createMetadata({
+  return createPublicMetadata({
     title: `${service.title} 서비스 안내`,
     description: getServiceMetadataDescription(service),
     path: `/services/${service.slug}`,

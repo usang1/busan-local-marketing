@@ -1,14 +1,19 @@
 import { FinalCta } from "@/components/sections/final-cta";
 import { Section, SectionHeading } from "@/components/ui/section";
-import { createMetadata } from "@/lib/seo";
+import { getPublicSiteProfile } from "@/lib/public/site-config";
+import { createPublicMetadata } from "@/lib/seo";
 
-export const metadata = createMetadata({
-  title: "이용약관 및 환불 정책",
-  description: "광고대행 상품 결제 전 필요한 이용약관, 결제 안내, 환불 정책 입력 구조를 제공합니다.",
-  path: "/terms",
-});
+export function generateMetadata() {
+  return createPublicMetadata({
+    title: "이용약관 및 환불 정책",
+    description: "광고대행 상품 결제 전 필요한 이용약관, 결제 안내, 환불 정책 입력 구조를 제공합니다.",
+    path: "/terms",
+  });
+}
 
-export default function TermsPage() {
+export default async function TermsPage() {
+  const { site } = await getPublicSiteProfile();
+
   return (
     <>
       <Section className="pt-12 sm:pt-16">
@@ -38,6 +43,17 @@ export default function TermsPage() {
             </section>
           ))}
         </div>
+        {site.businessName || site.address || site.phone || site.email ? (
+          <div className="mt-5 rounded-[8px] border border-line bg-white p-6 text-sm leading-7 text-muted">
+            <h2 className="text-xl font-extrabold text-ink">운영 정보</h2>
+            <div className="mt-4 grid gap-2">
+              {site.businessName ? <p>사업자명: {site.businessName}</p> : null}
+              {site.address ? <p>사업장 주소: {site.address}</p> : null}
+              {site.phone ? <p>대표 전화번호: {site.phone}</p> : null}
+              {site.email ? <p>대표 이메일: {site.email}</p> : null}
+            </div>
+          </div>
+        ) : null}
       </Section>
       <FinalCta />
     </>
