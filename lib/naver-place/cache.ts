@@ -1,6 +1,7 @@
 import type { NaverPlaceData, PlaceAnalysisResult } from "@/lib/naver-place/types";
 
 const cacheTtlMs = 60 * 60 * 1000;
+const limitedCacheTtlMs = 10 * 60 * 1000;
 const rateLimitWindowMs = 60 * 1000;
 const maxRequestsPerWindow = 8;
 
@@ -28,12 +29,16 @@ export function getCachedPlaceAnalysis(placeId: string) {
   return cached;
 }
 
-export function setCachedPlaceAnalysis(placeId: string, place: NaverPlaceData, analysis: PlaceAnalysisResult) {
+export function setCachedPlaceAnalysis(placeId: string, place: NaverPlaceData, analysis: PlaceAnalysisResult, ttlMs = cacheTtlMs) {
   analysisCache.set(placeId, {
     place,
     analysis,
-    expiresAt: Date.now() + cacheTtlMs,
+    expiresAt: Date.now() + ttlMs,
   });
+}
+
+export function cacheTtlForPlaceStatus(status: NaverPlaceData["dataStatus"]) {
+  return status === "success" || status === "partial" ? cacheTtlMs : limitedCacheTtlMs;
 }
 
 export function checkPlaceAnalyzeRateLimit(key: string) {

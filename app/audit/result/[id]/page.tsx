@@ -64,6 +64,10 @@ function displayField(value?: string | null) {
 }
 
 function dataStatusNotice(status?: PlaceDataStatus) {
+  if (status === "rate_limited") {
+    return "네이버 공개 페이지 요청이 일시적으로 제한되었습니다. 짧은 시간 안에 재요청하지 않고 제한 진단으로 처리했습니다.";
+  }
+
   if (status === "fetch_failed" || status === "parse_failed") {
     return "네이버 플레이스 공개 데이터를 정상적으로 불러오지 못했습니다. 잠시 후 다시 시도하거나 다른 네이버 플레이스 URL을 입력해 주세요.";
   }

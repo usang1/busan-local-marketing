@@ -357,16 +357,19 @@ function uniqueFetchUrls(placeId: string, normalizedUrl: string) {
     new Set([
       `https://pcmap.place.naver.com/place/${placeId}`,
       normalizedUrl,
-      `https://m.place.naver.com/place/${placeId}/home`,
     ]),
-  );
+  ).slice(0, 1);
 }
 
 async function fetchAllowedText(initialUrl: string, sourceUrl: string) {
   let currentUrl = initialUrl;
+  let requestCount = 0;
+  let redirectCount = 0;
 
   for (let depth = 0; depth < 4; depth += 1) {
+    requestCount += 1;
     const response = await fetch(currentUrl, {
+      method: "GET",
       redirect: "manual",
       cache: "no-store",
       signal: AbortSignal.timeout(8000),
@@ -378,15 +381,43 @@ async function fetchAllowedText(initialUrl: string, sourceUrl: string) {
       },
     });
 
-    if (response.status === 404) return { status: 404, text: "", finalUrl: currentUrl };
+    const retryAfter = response.headers.get("retry-after");
+    if (response.status === 404 || response.status === 429) {
+      return {
+        status: response.status,
+        text: "",
+        finalUrl: currentUrl,
+        retryAfter,
+        requestCount,
+        redirectCount,
+      };
+    }
+
     if ([301, 302, 303, 307, 308].includes(response.status)) {
       const location = response.headers.get("location");
-      if (!location) return { status: response.status, text: "", finalUrl: currentUrl };
+      if (!location) {
+        return {
+          status: response.status,
+          text: "",
+          finalUrl: currentUrl,
+          retryAfter,
+          requestCount,
+          redirectCount,
+        };
+      }
       const nextUrl = new URL(location, currentUrl);
       if (!isAllowedNaverHost(nextUrl.hostname)) {
-        return { status: 0, text: "", finalUrl: currentUrl };
+        return {
+          status: 0,
+          text: "",
+          finalUrl: currentUrl,
+          retryAfter,
+          requestCount,
+          redirectCount,
+        };
       }
       currentUrl = nextUrl.toString();
+      redirectCount += 1;
       continue;
     }
 
@@ -394,10 +425,13 @@ async function fetchAllowedText(initialUrl: string, sourceUrl: string) {
       status: response.status,
       text: await response.text(),
       finalUrl: currentUrl,
+      retryAfter,
+      requestCount,
+      redirectCount,
     };
   }
 
-  return { status: 0, text: "", finalUrl: currentUrl };
+  return { status: 0, text: "", finalUrl: currentUrl, retryAfter: null, requestCount, redirectCount };
 }
 
 function limitedPlaceData({
@@ -476,6 +510,21 @@ export class PublicNaverPlaceProvider implements NaverPlaceProvider {
         success: false,
         code: "PLACE_NOT_FOUND",
         message: "매장 정보를 찾을 수 없습니다.",
+      };
+    }
+
+    if (fetched.status === 429) {
+      const retryAfterText = fetched.retryAfter ? ` Retry-After: ${fetched.retryAfter}` : "";
+      return {
+        success: true,
+        place: limitedPlaceData({
+          placeId,
+          sourceUrl,
+          normalizedUrl,
+          finalUrl: fetched.finalUrl,
+          reason: `네이버 공개 페이지 요청이 일시적으로 제한되어 제한 진단으로 처리했습니다. 응답 상태: 429.${retryAfterText}`,
+          dataStatus: "rate_limited",
+        }),
       };
     }
 

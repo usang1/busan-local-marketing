@@ -1,5 +1,5 @@
 import { analyzePlace } from "@/lib/naver-place/analyzer";
-import { checkPlaceAnalyzeRateLimit, getCachedPlaceAnalysis, setCachedPlaceAnalysis } from "@/lib/naver-place/cache";
+import { cacheTtlForPlaceStatus, checkPlaceAnalyzeRateLimit, getCachedPlaceAnalysis, setCachedPlaceAnalysis } from "@/lib/naver-place/cache";
 import { createNaverPlaceProvider } from "@/lib/naver-place/provider";
 import { resolveNaverPlaceUrl } from "@/lib/naver-place/parse-url";
 import type { NaverPlaceData, PlaceAnalysisResult, PlaceAnalyzeResponse } from "@/lib/naver-place/types";
@@ -9,6 +9,10 @@ import { getSupabaseServerClient } from "@/lib/supabase";
 type CreateAuditOptions = {
   clientIp?: string;
 };
+
+type ProviderResult = Awaited<ReturnType<ReturnType<typeof createNaverPlaceProvider>["getPlace"]>>;
+
+const pendingProviderRequests = new Map<string, Promise<ProviderResult>>();
 
 function regionFromPlace(place: NaverPlaceData) {
   const address = place.roadAddress || place.address;
@@ -81,16 +85,6 @@ export async function createPlaceAuditFromUrl(placeUrl: string, options: CreateA
     };
   }
 
-  const rateKey = `${options.clientIp || "unknown"}:${parsed.placeId}`;
-  const rateLimit = checkPlaceAnalyzeRateLimit(rateKey);
-  if (!rateLimit.allowed && !getCachedPlaceAnalysis(parsed.placeId)) {
-    return {
-      success: false,
-      code: "RATE_LIMITED",
-      message: "요청이 잠시 많습니다. 잠시 후 다시 시도해주세요.",
-    };
-  }
-
   const cached = getCachedPlaceAnalysis(parsed.placeId);
   let place: NaverPlaceData;
   let analysis: PlaceAnalysisResult;
@@ -99,29 +93,56 @@ export async function createPlaceAuditFromUrl(placeUrl: string, options: CreateA
   if (cached) {
     place = cached.place;
     analysis = cached.analysis;
-  } else {
+    const saved = await saveAudit(place, analysis);
+    return {
+      success: true,
+      id: saved.id,
+      stored: saved.stored,
+      cached: usedCache,
+      place,
+      analysis,
+    };
+  }
+
+  const rateKey = `${options.clientIp || "unknown"}:${parsed.placeId}`;
+  const rateLimit = checkPlaceAnalyzeRateLimit(rateKey);
+  if (!rateLimit.allowed) {
+    return {
+      success: false,
+      code: "RATE_LIMITED",
+      message: "요청이 잠시 많습니다. 잠시 후 다시 시도해주세요.",
+    };
+  }
+
+  const pendingKey = parsed.placeId;
+  let pending = pendingProviderRequests.get(pendingKey);
+  if (!pending) {
     const provider = createNaverPlaceProvider();
-    const result = await provider.getPlace({
+    pending = provider.getPlace({
       placeId: parsed.placeId,
       sourceUrl: parsed.inputUrl,
       normalizedUrl: parsed.normalizedUrl,
     });
-
-    if (!result.success) {
-      return {
-        success: false,
-        code: result.code,
-        message: result.message,
-      };
-    }
-
-    place = result.place;
-    analysis = analyzePlace(place);
-    if (analysis.maxScore > 0) {
-      setCachedPlaceAnalysis(parsed.placeId, place, analysis);
-    }
-    usedCache = false;
+    pendingProviderRequests.set(pendingKey, pending);
+    pending.then(
+      () => pendingProviderRequests.delete(pendingKey),
+      () => pendingProviderRequests.delete(pendingKey),
+    );
   }
+
+  const result = await pending;
+  if (!result.success) {
+    return {
+      success: false,
+      code: result.code,
+      message: result.message,
+    };
+  }
+
+  place = result.place;
+  analysis = analyzePlace(place);
+  setCachedPlaceAnalysis(parsed.placeId, place, analysis, cacheTtlForPlaceStatus(place.dataStatus));
+  usedCache = false;
 
   const saved = await saveAudit(place, analysis);
   return {

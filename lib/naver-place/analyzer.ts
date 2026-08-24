@@ -40,6 +40,10 @@ function gradeFromScore(score: number | null): PlaceAnalysisResult["grade"] {
 }
 
 function limitedSummary(place: NaverPlaceData) {
+  if (place.dataStatus === "rate_limited") {
+    return "네이버 공개 페이지 요청이 일시적으로 제한되어 가능한 항목만 표시했습니다. 잠시 후 다시 시도해 주세요.";
+  }
+
   if (place.dataStatus === "fetch_failed") {
     return "네이버 플레이스 공개 데이터를 정상적으로 불러오지 못했습니다. 잠시 후 다시 시도하거나 다른 네이버 플레이스 URL을 입력해 주세요.";
   }

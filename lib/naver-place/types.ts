@@ -5,7 +5,7 @@ export type PlaceDataAvailability = {
   businessHours: boolean;
 };
 
-export type PlaceDataStatus = "success" | "partial" | "fetch_failed" | "parse_failed" | "invalid_place";
+export type PlaceDataStatus = "success" | "partial" | "rate_limited" | "fetch_failed" | "parse_failed" | "invalid_place";
 
 export type NaverPlaceData = {
   placeId: string;
