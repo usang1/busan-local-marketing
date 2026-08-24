@@ -70,7 +70,10 @@ export function getStoredAttribution(): StoredAttribution {
     const parsed = JSON.parse(stored) as Record<string, string> & { expiresAt?: number };
     if (parsed.expiresAt && parsed.expiresAt < Date.now()) {
       window.localStorage.removeItem(storageKey);
-      return {};
+      return {
+        landingPage: window.location.href,
+        referrer: document.referrer || "",
+      };
     }
     return toFormAttribution(parsed);
   } catch {

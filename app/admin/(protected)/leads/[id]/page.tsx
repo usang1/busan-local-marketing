@@ -5,8 +5,8 @@ import { CopyPhoneButton } from "@/components/admin/copy-phone-button";
 import { LeadEditor } from "@/components/admin/lead-editor";
 import { StatusBadge } from "@/components/admin/status-badge";
 import { leadTypeLabels } from "@/lib/admin/constants";
-import { formatDateTime, isSafeHttpUrl } from "@/lib/admin/format";
-import { getLead } from "@/lib/admin/db";
+import { formatDateTime, formatPrice, isSafeHttpUrl } from "@/lib/admin/format";
+import { getLead, getLeadOrders } from "@/lib/admin/db";
 
 function InfoRow({ label, value }: { label: string; value?: string | null }) {
   return (
@@ -19,7 +19,12 @@ function InfoRow({ label, value }: { label: string; value?: string | null }) {
 
 export default async function LeadDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
-  const { data: lead, error } = await getLead(id);
+  const [{ data: lead, error }, ordersResult] = await Promise.all([getLead(id), getLeadOrders(id)]);
+  const paidOrders = ordersResult.data.filter((order) => order.status === "paid");
+  const firstPaidAt = paidOrders
+    .map((order) => order.paid_at)
+    .filter(Boolean)
+    .sort()[0];
 
   if (!lead && !error) notFound();
 
@@ -34,6 +39,7 @@ export default async function LeadDetailPage({ params }: { params: Promise<{ id:
               <div className="mb-5 flex flex-wrap items-center gap-2">
                 <span className="rounded-[6px] bg-slate-100 px-2.5 py-1 text-xs font-bold text-slate-700">{leadTypeLabels[lead.lead_type]}</span>
                 <StatusBadge status={lead.status} />
+                {lead.is_test ? <span className="rounded-[6px] bg-amber-100 px-2.5 py-1 text-xs font-bold text-amber-900">테스트 Lead</span> : null}
               </div>
               <h2 className="text-lg font-extrabold text-slate-950">기본 정보</h2>
               <dl className="mt-5 grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
@@ -82,10 +88,48 @@ export default async function LeadDetailPage({ params }: { params: Promise<{ id:
 
             <section className="rounded-[8px] border border-slate-200 bg-white p-5">
               <h2 className="text-lg font-extrabold text-slate-950">접수 기록</h2>
-              <dl className="mt-5 grid gap-5 sm:grid-cols-2">
-                <InfoRow label="신청일" value={formatDateTime(lead.created_at)} />
+              <dl className="mt-5 grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
+                <InfoRow label="Lead 생성일" value={formatDateTime(lead.created_at)} />
+                <InfoRow label="최초 연락일" value={formatDateTime(lead.contacted_at)} />
+                <InfoRow label="상담일" value={formatDateTime(lead.consulted_at)} />
+                <InfoRow label="제안일" value={formatDateTime(lead.proposed_at)} />
+                <InfoRow label="계약일" value={formatDateTime(lead.contracted_at)} />
+                <InfoRow label="결제일" value={formatDateTime(firstPaidAt)} />
                 <InfoRow label="마지막 수정일" value={formatDateTime(lead.updated_at)} />
               </dl>
+            </section>
+
+            {ordersResult.error ? <AdminError message={ordersResult.error} /> : null}
+            <section className="rounded-[8px] border border-slate-200 bg-white p-5">
+              <h2 className="text-lg font-extrabold text-slate-950">연결 주문 / 매출</h2>
+              {ordersResult.data.length ? (
+                <div className="mt-5 overflow-hidden rounded-[8px] border border-slate-200">
+                  <table className="min-w-full divide-y divide-slate-200 text-sm">
+                    <thead className="bg-slate-50 text-left text-xs font-bold uppercase text-slate-500">
+                      <tr>
+                        <th className="px-4 py-3">주문번호</th>
+                        <th className="px-4 py-3">상품</th>
+                        <th className="px-4 py-3">상태</th>
+                        <th className="px-4 py-3">금액</th>
+                        <th className="px-4 py-3">결제일</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-slate-100">
+                      {ordersResult.data.map((order) => (
+                        <tr key={order.id}>
+                          <td className="px-4 py-3 font-bold text-slate-950">{order.order_id}</td>
+                          <td className="px-4 py-3 text-slate-700">{order.products?.name || "-"}</td>
+                          <td className="px-4 py-3 text-slate-700">{order.status}</td>
+                          <td className="px-4 py-3 text-slate-700">{formatPrice(order.amount, "")}</td>
+                          <td className="px-4 py-3 text-slate-700">{formatDateTime(order.paid_at)}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              ) : (
+                <p className="mt-4 text-sm leading-6 text-slate-600">아직 이 Lead와 연결된 주문이 없습니다.</p>
+              )}
             </section>
 
             <section className="rounded-[8px] border border-slate-200 bg-white p-5">

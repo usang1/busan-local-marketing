@@ -5,13 +5,14 @@ type PageSeo = {
   title: string;
   description: string;
   path?: string;
+  index?: boolean;
 };
 
-export function createMetadata({ title, description, path = "" }: PageSeo): Metadata {
+export function createMetadata({ title, description, path = "", index = true }: PageSeo): Metadata {
   const url = `${SITE.url}${path}`;
 
   return {
-    title: `${title} | ${BRAND.name}`,
+    title,
     description,
     keywords: SEO_KEYWORDS,
     alternates: {
@@ -34,7 +35,7 @@ export function createMetadata({ title, description, path = "" }: PageSeo): Meta
       ],
     },
     robots: {
-      index: true,
+      index,
       follow: true,
     },
   };

@@ -2,7 +2,7 @@ import { FinalCta } from "@/components/sections/final-cta";
 import { ServiceCard } from "@/components/sections/service-card";
 import { ButtonLink } from "@/components/ui/button";
 import { Section, SectionHeading } from "@/components/ui/section";
-import { processSteps, serviceGroups } from "@/data/services";
+import { getServicesByCategory, processSteps, serviceCategoryDescriptions, serviceCategoryOrder } from "@/data/services";
 import { createMetadata } from "@/lib/seo";
 
 export const metadata = createMetadata({
@@ -32,10 +32,32 @@ export default function ServicesPage() {
       </Section>
 
       <Section className="bg-pale-blue/50">
-        <div className="grid gap-5 md:grid-cols-2 lg:grid-cols-3">
-          {serviceGroups.map((service) => (
-            <ServiceCard key={service.slug} {...service} href={service.slug === "naver-place" ? "/services/naver-place" : "/free-audit"} />
-          ))}
+        <div className="grid gap-12">
+          {serviceCategoryOrder.map((category) => {
+            const categoryServices = getServicesByCategory(category);
+
+            return (
+              <div key={category}>
+                <div className="mb-5 max-w-3xl">
+                  <p className="text-sm font-extrabold text-accent">{category}</p>
+                  <p className="mt-2 text-base leading-8 text-muted">{serviceCategoryDescriptions[category]}</p>
+                </div>
+                <div className="grid gap-5 md:grid-cols-2 lg:grid-cols-3">
+                  {categoryServices.map((service) => (
+                    <ServiceCard
+                      key={service.slug}
+                      title={service.title}
+                      eyebrow={service.shortTitle}
+                      description={service.summary}
+                      items={service.features}
+                      icon={service.icon}
+                      href={`/services/${service.slug}`}
+                    />
+                  ))}
+                </div>
+              </div>
+            );
+          })}
         </div>
       </Section>
 

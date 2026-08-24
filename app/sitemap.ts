@@ -1,11 +1,13 @@
 import type { MetadataRoute } from "next";
 import { SITE } from "@/config/site";
 import { portfolioCases } from "@/data/portfolio";
+import { services } from "@/data/services";
 import { listPortfolios } from "@/lib/admin/db";
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const routes = ["", "/services", "/services/naver-place", "/portfolio", "/free-audit", "/contact", "/pricing", "/privacy", "/terms"];
   const now = new Date();
+  const publishedServiceRoutes = services.filter((service) => !service.draft).map((service) => `/services/${service.slug}`);
   const portfolios = await listPortfolios({ publishedOnly: true });
   const portfolioRoutes = portfolios.data.length
     ? portfolios.data.map((item) => ({
@@ -15,7 +17,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     : portfolioCases.map((item) => ({ slug: item.slug, updatedAt: now.toISOString() }));
 
   return [
-    ...routes.map((route) => ({
+    ...[...routes, ...publishedServiceRoutes].map((route) => ({
       url: `${SITE.url}${route}`,
       lastModified: now,
       changeFrequency: "weekly" as const,

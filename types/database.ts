@@ -20,6 +20,7 @@ export type Lead = {
   message: string | null;
   status: LeadStatus;
   admin_memo: string | null;
+  is_test: boolean;
   utm_source: string | null;
   utm_medium: string | null;
   utm_campaign: string | null;
@@ -27,6 +28,10 @@ export type Lead = {
   utm_term: string | null;
   landing_page: string | null;
   referrer: string | null;
+  contacted_at: string | null;
+  consulted_at: string | null;
+  proposed_at: string | null;
+  contracted_at: string | null;
   created_at: string;
   updated_at: string;
 };

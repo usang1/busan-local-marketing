@@ -28,6 +28,7 @@ export function LeadTable({ leads }: { leads: Lead[] }) {
               <tr key={lead.id} className="hover:bg-slate-50">
                 <td className="px-4 py-3 font-bold text-slate-950">
                   <Link href={`/admin/leads/${lead.id}`}>{lead.business_name}</Link>
+                  {lead.is_test ? <span className="ml-2 rounded-[6px] bg-amber-100 px-2 py-0.5 text-xs text-amber-900">테스트</span> : null}
                 </td>
                 <td className="px-4 py-3 text-slate-700">{lead.contact_name}</td>
                 <td className="px-4 py-3 text-slate-700">{lead.phone}</td>
@@ -51,6 +52,7 @@ export function LeadTable({ leads }: { leads: Lead[] }) {
                   {lead.business_name}
                 </Link>
                 <p className="mt-1 text-sm text-slate-600">{lead.industry} · {lead.region}</p>
+                {lead.is_test ? <span className="mt-2 inline-flex rounded-[6px] bg-amber-100 px-2 py-0.5 text-xs font-bold text-amber-900">테스트</span> : null}
               </div>
               <StatusBadge status={lead.status} />
             </div>

@@ -12,6 +12,7 @@ export function LeadEditor({ lead }: { lead: Lead }) {
   const router = useRouter();
   const [status, setStatus] = useState<LeadStatus>(lead.status);
   const [adminMemo, setAdminMemo] = useState(lead.admin_memo || "");
+  const [isTest, setIsTest] = useState(Boolean(lead.is_test));
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState("");
   const [error, setError] = useState("");
@@ -24,7 +25,7 @@ export function LeadEditor({ lead }: { lead: Lead }) {
     const response = await fetch(`/api/admin/leads/${lead.id}`, {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ status, adminMemo }),
+      body: JSON.stringify({ status, adminMemo, isTest }),
     });
 
     setLoading(false);
@@ -55,6 +56,20 @@ export function LeadEditor({ lead }: { lead: Lead }) {
             </option>
           ))}
         </select>
+      </label>
+      <label className="mt-5 flex items-start gap-2 rounded-[8px] border border-slate-200 bg-slate-50 p-3 text-sm font-bold text-slate-700">
+        <input
+          type="checkbox"
+          className="mt-1"
+          checked={isTest}
+          onChange={(event) => setIsTest(event.target.checked)}
+        />
+        <span>
+          테스트 Lead로 표시
+          <span className="mt-1 block text-xs font-normal leading-5 text-slate-500">
+            운영 Dashboard 집계에서 실제 영업 데이터와 구분합니다.
+          </span>
+        </span>
       </label>
       <label className="mt-5 block text-sm font-bold text-slate-700">
         관리자 메모

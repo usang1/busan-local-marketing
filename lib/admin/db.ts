@@ -14,6 +14,99 @@ export type LeadListParams = {
   sort?: "newest" | "oldest" | "business";
 };
 
+export type DashboardPeriod = "today" | "7d" | "30d" | "all";
+
+type AttributionRow = {
+  utm_source: string | null;
+  utm_medium: string | null;
+  utm_campaign: string | null;
+  referrer: string | null;
+};
+
+type FunnelStep = {
+  label: string;
+  from: number;
+  to: number;
+  rate: number | null;
+};
+
+type SourceStat = {
+  key: string;
+  source: string;
+  medium: string;
+  campaign: string;
+  referrer: string;
+  leads: number;
+  freeAudit: number;
+  consultation: number;
+  contracts: number;
+  payments: number;
+  revenue: number;
+};
+
+type CampaignStat = {
+  campaign: string;
+  sessions: null;
+  leads: number;
+  contracts: number;
+  payments: number;
+  revenue: number;
+};
+
+function getPeriodStart(period: DashboardPeriod) {
+  if (period === "all") return null;
+
+  const now = new Date();
+  const start = new Date(now);
+  if (period === "today") {
+    start.setHours(0, 0, 0, 0);
+    return start;
+  }
+  start.setDate(now.getDate() - (period === "7d" ? 6 : 29));
+  start.setHours(0, 0, 0, 0);
+  return start;
+}
+
+function isInPeriod(value: string | null | undefined, start: Date | null) {
+  if (!start) return true;
+  if (!value) return false;
+  return new Date(value).getTime() >= start.getTime();
+}
+
+function conversionRate(to: number, from: number) {
+  if (from <= 0) return null;
+  return Math.round((to / from) * 1000) / 10;
+}
+
+function referrerHost(referrer?: string | null) {
+  if (!referrer) return "";
+  try {
+    return new URL(referrer).hostname.replace(/^www\./, "");
+  } catch {
+    return referrer;
+  }
+}
+
+function normalizeAttribution(row: AttributionRow) {
+  const source = row.utm_source?.trim() || (row.referrer ? referrerHost(row.referrer) : "direct");
+  const medium = row.utm_medium?.trim() || (row.referrer ? "referral" : "direct");
+  const campaign = row.utm_campaign?.trim() || "";
+  const referrer = referrerHost(row.referrer);
+  return {
+    source,
+    medium,
+    campaign,
+    referrer,
+    key: [source, medium, campaign, referrer].join("|"),
+  };
+}
+
+function hasReached(status: LeadStatus, stage: LeadStatus) {
+  const order: LeadStatus[] = ["new", "contacted", "consulting", "proposal", "contracted"];
+  if (status === "on_hold" || status === "rejected") return false;
+  return order.indexOf(status) >= order.indexOf(stage);
+}
+
 function cleanPage(value?: number) {
   if (!value || Number.isNaN(value) || value < 1) return 1;
   return Math.floor(value);
@@ -110,21 +203,34 @@ export async function getLeadIndustries() {
   return Array.from(new Set((data || []).map((item) => item.industry).filter(Boolean)));
 }
 
-export async function getDashboardStats() {
+export async function getDashboardStats(period: DashboardPeriod = "30d") {
   const supabase = await getSupabaseServerClient();
+  const start = getPeriodStart(period);
   const empty = {
+    period,
     total: 0,
-    today: 0,
-    week: 0,
+    newLeads: 0,
+    testLeads: 0,
     freeAudit: 0,
     consultation: 0,
+    contacted: 0,
     consulting: 0,
     proposal: 0,
     contracted: 0,
     paidOrders: 0,
     paidAmount: 0,
     recentOrders: [] as Order[],
-    sourceStats: [] as { source: string; total: number; freeAudit: number; consultation: number }[],
+    sourceStats: [] as SourceStat[],
+    campaignStats: [] as CampaignStat[],
+    conversionSteps: [] as FunnelStep[],
+    freeAuditFunnel: {
+      ctaClicks: null as number | null,
+      formStarts: null as number | null,
+      formSubmits: 0,
+      submitRate: null as number | null,
+      contracts: 0,
+      paid: 0,
+    },
     funnel: Object.fromEntries(funnelStatuses.map((status) => [status, 0])) as Record<LeadStatus, number>,
     recent: [] as Lead[],
     error: supabase ? null : "Supabase 환경변수가 없습니다.",
@@ -132,90 +238,139 @@ export async function getDashboardStats() {
 
   if (!supabase) return empty;
 
-  const now = new Date();
-  const startOfToday = new Date(now);
-  startOfToday.setHours(0, 0, 0, 0);
-  const startOfWeek = new Date(now);
-  startOfWeek.setDate(now.getDate() - 6);
-  startOfWeek.setHours(0, 0, 0, 0);
-  const startOfThirtyDays = new Date(now);
-  startOfThirtyDays.setDate(now.getDate() - 29);
-  startOfThirtyDays.setHours(0, 0, 0, 0);
-
-  const [
-    total,
-    today,
-    week,
-    freeAudit,
-    consultation,
-    consulting,
-    proposal,
-    contracted,
-    paidOrders,
-    paidOrderRows,
-    recent,
-    recentOrders,
-    sourceRows,
-  ] = await Promise.all([
-    supabase.from("leads").select("id", { count: "exact", head: true }),
-    supabase.from("leads").select("id", { count: "exact", head: true }).gte("created_at", startOfToday.toISOString()),
-    supabase.from("leads").select("id", { count: "exact", head: true }).gte("created_at", startOfWeek.toISOString()),
-    supabase.from("leads").select("id", { count: "exact", head: true }).eq("lead_type", "free_audit"),
-    supabase.from("leads").select("id", { count: "exact", head: true }).eq("lead_type", "consultation"),
-    supabase.from("leads").select("id", { count: "exact", head: true }).eq("status", "consulting"),
-    supabase.from("leads").select("id", { count: "exact", head: true }).eq("status", "proposal"),
-    supabase.from("leads").select("id", { count: "exact", head: true }).eq("status", "contracted"),
-    supabase.from("orders").select("id", { count: "exact", head: true }).eq("status", "paid"),
-    supabase.from("orders").select("amount").eq("status", "paid"),
-    supabase.from("leads").select("*").order("created_at", { ascending: false }).limit(8),
-    supabase
-      .from("orders")
-      .select("*, products(name, slug, price_label)")
-      .order("created_at", { ascending: false })
-      .limit(5),
-    supabase
-      .from("leads")
-      .select("utm_source, lead_type")
-      .gte("created_at", startOfThirtyDays.toISOString()),
-  ]);
-
-  const funnelEntries = await Promise.all(
-    funnelStatuses.map(async (status) => {
-      const { count } = await supabase
-        .from("leads")
-        .select("id", { count: "exact", head: true })
-        .eq("status", status);
-      return [status, count || 0] as const;
-    }),
-  );
-
-  const sourceMap = new Map<string, { source: string; total: number; freeAudit: number; consultation: number }>();
-  for (const item of sourceRows.data || []) {
-    const source = item.utm_source || "direct";
-    const stat = sourceMap.get(source) || { source, total: 0, freeAudit: 0, consultation: 0 };
-    stat.total += 1;
-    if (item.lead_type === "free_audit") stat.freeAudit += 1;
-    if (item.lead_type === "consultation") stat.consultation += 1;
-    sourceMap.set(source, stat);
+  let leadsQuery = supabase.from("leads").select("*").eq("is_test", false).order("created_at", { ascending: false });
+  let testLeadsQuery = supabase.from("leads").select("id", { count: "exact", head: true }).eq("is_test", true);
+  if (start) {
+    leadsQuery = leadsQuery.gte("created_at", start.toISOString());
+    testLeadsQuery = testLeadsQuery.gte("created_at", start.toISOString());
   }
 
+  const [leadsResult, ordersResult, recentResult, recentOrdersResult, testLeadsResult] = await Promise.all([
+    leadsQuery.limit(5000),
+    supabase.from("orders").select("*, products(name, slug, price_label)").order("created_at", { ascending: false }).limit(5000),
+    supabase.from("leads").select("*").order("created_at", { ascending: false }).limit(8),
+    supabase.from("orders").select("*, products(name, slug, price_label)").order("created_at", { ascending: false }).limit(5),
+    testLeadsQuery,
+  ]);
+
+  const leads = (leadsResult.data || []) as Lead[];
+  const orders = ((ordersResult.data || []) as Order[]).filter((order) => isInPeriod(order.paid_at || order.created_at, start));
+  const paidOrders = orders.filter((order) => order.status === "paid");
+  const paidLeadIds = new Set(paidOrders.map((order) => order.lead_id).filter(Boolean));
+  const contractedLeadIds = new Set(leads.filter((lead) => lead.status === "contracted").map((lead) => lead.id));
+
+  const sourceMap = new Map<string, SourceStat>();
+  const campaignMap = new Map<string, CampaignStat>();
+
+  function ensureSource(row: AttributionRow) {
+    const attribution = normalizeAttribution(row);
+    const existing = sourceMap.get(attribution.key);
+    if (existing) return existing;
+    const next = {
+      key: attribution.key,
+      source: attribution.source,
+      medium: attribution.medium,
+      campaign: attribution.campaign,
+      referrer: attribution.referrer,
+      leads: 0,
+      freeAudit: 0,
+      consultation: 0,
+      contracts: 0,
+      payments: 0,
+      revenue: 0,
+    };
+    sourceMap.set(attribution.key, next);
+    return next;
+  }
+
+  function ensureCampaign(campaign: string | null) {
+    const key = campaign?.trim() || "(campaign 없음)";
+    const existing = campaignMap.get(key);
+    if (existing) return existing;
+    const next = { campaign: key, sessions: null, leads: 0, contracts: 0, payments: 0, revenue: 0 };
+    campaignMap.set(key, next);
+    return next;
+  }
+
+  for (const lead of leads) {
+    const source = ensureSource(lead);
+    const campaign = ensureCampaign(lead.utm_campaign);
+    source.leads += 1;
+    campaign.leads += 1;
+    if (lead.lead_type === "free_audit") source.freeAudit += 1;
+    if (lead.lead_type === "consultation") source.consultation += 1;
+    if (lead.status === "contracted") {
+      source.contracts += 1;
+      campaign.contracts += 1;
+    }
+  }
+
+  for (const order of paidOrders) {
+    const source = ensureSource(order);
+    const campaign = ensureCampaign(order.utm_campaign);
+    source.payments += 1;
+    source.revenue += Number(order.amount || 0);
+    campaign.payments += 1;
+    campaign.revenue += Number(order.amount || 0);
+  }
+
+  const reachedContacted = leads.filter((lead) => hasReached(lead.status, "contacted")).length;
+  const reachedConsulting = leads.filter((lead) => hasReached(lead.status, "consulting")).length;
+  const reachedProposal = leads.filter((lead) => hasReached(lead.status, "proposal")).length;
+  const reachedContracted = leads.filter((lead) => hasReached(lead.status, "contracted")).length;
+  const linkedPaidContracts = Array.from(paidLeadIds).filter((leadId) => contractedLeadIds.has(String(leadId))).length;
+  const freeAuditLeads = leads.filter((lead) => lead.lead_type === "free_audit");
+  const freeAuditLeadIds = new Set(freeAuditLeads.map((lead) => lead.id));
+  const freeAuditPaid = paidOrders.filter((order) => order.lead_id && freeAuditLeadIds.has(order.lead_id)).length;
+
   return {
-    total: total.count || 0,
-    today: today.count || 0,
-    week: week.count || 0,
-    freeAudit: freeAudit.count || 0,
-    consultation: consultation.count || 0,
-    consulting: consulting.count || 0,
-    proposal: proposal.count || 0,
-    contracted: contracted.count || 0,
-    paidOrders: paidOrders.count || 0,
-    paidAmount: (paidOrderRows.data || []).reduce((sum, item) => sum + Number(item.amount || 0), 0),
-    funnel: Object.fromEntries(funnelEntries) as Record<LeadStatus, number>,
-    recent: (recent.data || []) as Lead[],
-    recentOrders: (recentOrders.data || []) as Order[],
-    sourceStats: Array.from(sourceMap.values()).sort((a, b) => b.total - a.total).slice(0, 6),
-    error: null,
+    period,
+    total: leads.length,
+    newLeads: leads.filter((lead) => lead.status === "new").length,
+    testLeads: testLeadsResult.count || 0,
+    freeAudit: freeAuditLeads.length,
+    consultation: leads.filter((lead) => lead.lead_type === "consultation").length,
+    contacted: leads.filter((lead) => lead.status === "contacted").length,
+    consulting: leads.filter((lead) => lead.status === "consulting").length,
+    proposal: leads.filter((lead) => lead.status === "proposal").length,
+    contracted: reachedContracted,
+    paidOrders: paidOrders.length,
+    paidAmount: paidOrders.reduce((sum, item) => sum + Number(item.amount || 0), 0),
+    funnel: Object.fromEntries(funnelStatuses.map((status) => [status, leads.filter((lead) => lead.status === status).length])) as Record<LeadStatus, number>,
+    conversionSteps: [
+      { label: "Lead → 연락완료", from: leads.length, to: reachedContacted, rate: conversionRate(reachedContacted, leads.length) },
+      { label: "연락완료 → 상담", from: reachedContacted, to: reachedConsulting, rate: conversionRate(reachedConsulting, reachedContacted) },
+      { label: "상담 → 제안", from: reachedConsulting, to: reachedProposal, rate: conversionRate(reachedProposal, reachedConsulting) },
+      { label: "제안 → 계약", from: reachedProposal, to: reachedContracted, rate: conversionRate(reachedContracted, reachedProposal) },
+      { label: "계약 → 결제", from: reachedContracted, to: linkedPaidContracts, rate: conversionRate(linkedPaidContracts, reachedContracted) },
+    ],
+    freeAuditFunnel: {
+      ctaClicks: null,
+      formStarts: null,
+      formSubmits: freeAuditLeads.length,
+      submitRate: null,
+      contracts: freeAuditLeads.filter((lead) => lead.status === "contracted").length,
+      paid: freeAuditPaid,
+    },
+    recent: (recentResult.data || []) as Lead[],
+    recentOrders: (recentOrdersResult.data || []) as Order[],
+    sourceStats: Array.from(sourceMap.values()).sort((a, b) => b.leads - a.leads || b.revenue - a.revenue).slice(0, 10),
+    campaignStats: Array.from(campaignMap.values()).sort((a, b) => b.leads - a.leads || b.revenue - a.revenue).slice(0, 10),
+    error: leadsResult.error || ordersResult.error ? "Dashboard 데이터를 불러오지 못했습니다." : null,
   };
+}
+
+export async function getLeadOrders(leadId: string) {
+  const supabase = await getSupabaseServerClient();
+  if (!supabase) return { data: [] as Order[], error: "Supabase 환경변수가 없습니다." };
+
+  const { data, error } = await supabase
+    .from("orders")
+    .select("*, products(name, slug, price_label)")
+    .eq("lead_id", leadId)
+    .order("created_at", { ascending: false });
+
+  return { data: (data || []) as Order[], error: error ? "연결 주문을 불러오지 못했습니다." : null };
 }
 
 export async function listOrders() {

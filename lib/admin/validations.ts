@@ -29,6 +29,7 @@ export const adminLoginSchema = z.object({
 export const leadUpdateSchema = z.object({
   status: z.enum(leadStatusOptions.map((item) => item.value) as [string, ...string[]]),
   adminMemo: z.string().trim().max(3000, "관리자 메모는 3000자 이내로 입력해주세요.").optional(),
+  isTest: z.boolean().default(false),
 });
 
 export const portfolioSchema = z.object({

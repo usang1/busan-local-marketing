@@ -25,6 +25,11 @@ export default async function AdminLeadsPage({
     }),
   ]);
   const totalPages = Math.max(1, Math.ceil(result.count / result.pageSize));
+  const exportParams = new URLSearchParams();
+  Object.entries(params).forEach(([key, value]) => {
+    if (value && key !== "page" && value !== "all") exportParams.set(key, value);
+  });
+  const exportHref = `/api/admin/leads/export${exportParams.toString() ? `?${exportParams.toString()}` : ""}`;
   const pageHref = (nextPage: number) => {
     const next = new URLSearchParams();
     Object.entries(params).forEach(([key, value]) => {
@@ -36,7 +41,15 @@ export default async function AdminLeadsPage({
 
   return (
     <>
-      <AdminPageHeader title="전체 문의" description="무료 진단과 일반 상담을 함께 관리합니다." />
+      <AdminPageHeader
+        title="전체 문의"
+        description="무료 진단과 일반 상담을 함께 관리합니다."
+        action={
+          <Link href={exportHref} className="rounded-[8px] border border-slate-200 bg-white px-4 py-2 text-sm font-bold text-slate-700">
+            CSV Export
+          </Link>
+        }
+      />
       <LeadFilters industries={industries} />
       {result.error ? <AdminError message={result.error} /> : null}
       {result.data.length ? (
