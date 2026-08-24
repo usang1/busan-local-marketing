@@ -100,30 +100,30 @@ export function PlaceAuditForm({ brandName = "부산 로컬 매장" }: { brandNa
       <div className="mt-6 grid gap-5 sm:grid-cols-2">
         <Field label="대표사진 준비 상태" required>
           <select name="representativePhotoStatus" className={selectClass} defaultValue="partial" required>
-            <option value="ready">대표사진 기준이 명확함</option>
-            <option value="partial">일부 준비됨</option>
-            <option value="missing">준비 부족</option>
+            <option value="ready">대표사진 있음</option>
+            <option value="partial">대표사진 일부 있음</option>
+            <option value="missing">대표사진 없음</option>
           </select>
         </Field>
         <Field label="메뉴/서비스 정보" required>
           <select name="menuInfoStatus" className={selectClass} defaultValue="partial" required>
-            <option value="ready">주요 정보가 정리됨</option>
-            <option value="partial">일부만 정리됨</option>
-            <option value="missing">정리 부족</option>
+            <option value="ready">메뉴/서비스 정보 있음</option>
+            <option value="partial">일부 정보만 있음</option>
+            <option value="missing">정보 없음</option>
           </select>
         </Field>
         <Field label="소개문구" required>
           <select name="introStatus" className={selectClass} defaultValue="partial" required>
-            <option value="ready">고객 선택 기준이 드러남</option>
+            <option value="ready">소개문구 있음</option>
             <option value="partial">기본 소개만 있음</option>
-            <option value="missing">소개문구 부족</option>
+            <option value="missing">소개문구 없음</option>
           </select>
         </Field>
         <Field label="사진 콘텐츠" required>
           <select name="photoContentStatus" className={selectClass} defaultValue="partial" required>
-            <option value="ready">대표/공간/메뉴 사진이 충분함</option>
+            <option value="ready">사진 충분히 있음</option>
             <option value="partial">일부 사진만 있음</option>
-            <option value="missing">사진 준비 부족</option>
+            <option value="missing">사진 없음</option>
           </select>
         </Field>
       </div>
@@ -131,7 +131,7 @@ export function PlaceAuditForm({ brandName = "부산 로컬 매장" }: { brandNa
       <div className="mt-6 grid gap-5 sm:grid-cols-2">
         <Field label="리뷰 수 범위" required>
           <select name="reviewCountRange" className={selectClass} defaultValue="unknown" required>
-            <option value="unknown">확인 필요</option>
+            <option value="unknown">잘 모름</option>
             <option value="none">거의 없음</option>
             <option value="under_10">10개 미만</option>
             <option value="10_50">10~50개</option>
@@ -140,7 +140,7 @@ export function PlaceAuditForm({ brandName = "부산 로컬 매장" }: { brandNa
         </Field>
         <Field label="최근 리뷰 상태" required>
           <select name="recentReviewStatus" className={selectClass} defaultValue="unknown" required>
-            <option value="unknown">확인 필요</option>
+            <option value="unknown">잘 모름</option>
             <option value="recent">최근 리뷰 있음</option>
             <option value="old">최근 리뷰가 오래됨</option>
             <option value="none">리뷰 없음</option>
@@ -148,18 +148,18 @@ export function PlaceAuditForm({ brandName = "부산 로컬 매장" }: { brandNa
         </Field>
         <Field label="리뷰 답변" required>
           <select name="reviewReplyStatus" className={selectClass} defaultValue="unknown" required>
-            <option value="active">꾸준히 답변</option>
+            <option value="active">답변하고 있음</option>
             <option value="partial">일부만 답변</option>
             <option value="none">답변 없음</option>
-            <option value="unknown">확인 필요</option>
+            <option value="unknown">잘 모름</option>
           </select>
         </Field>
         <Field label="쿠폰/이벤트" required>
           <select name="couponEventStatus" className={selectClass} defaultValue="unknown" required>
-            <option value="active">운영 중</option>
+            <option value="active">진행 중</option>
             <option value="planned">준비 중</option>
             <option value="none">없음</option>
-            <option value="unknown">확인 필요</option>
+            <option value="unknown">잘 모름</option>
           </select>
         </Field>
       </div>
@@ -174,9 +174,9 @@ export function PlaceAuditForm({ brandName = "부산 로컬 매장" }: { brandNa
         ].map(([name, label]) => (
           <Field key={name} label={label} required>
             <select name={name} className={selectClass} defaultValue="unknown" required>
-              <option value="yes">준비됨</option>
-              <option value="no">준비 안 됨</option>
-              <option value="unknown">확인 필요</option>
+              <option value="yes">있음</option>
+              <option value="no">없음</option>
+              <option value="unknown">잘 모름</option>
             </select>
           </Field>
         ))}
@@ -193,8 +193,8 @@ export function PlaceAuditForm({ brandName = "부산 로컬 매장" }: { brandNa
         ].map(([name, label]) => (
           <Field key={name} label={label} required>
             <select name={name} className={selectClass} defaultValue="irregular" required>
-              <option value="active">꾸준히 운영</option>
-              <option value="irregular">비정기 운영</option>
+              <option value="active">운영 중</option>
+              <option value="irregular">가끔 운영</option>
               <option value="none">운영 안 함</option>
             </select>
           </Field>

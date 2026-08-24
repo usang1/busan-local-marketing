@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { placeAuditInputSchema } from "@/lib/audit/schema";
 import { runPlaceAudit } from "@/lib/audit/rules";
+import { encodeSelfAuditInput } from "@/lib/audit/shareable";
 import { getSupabaseServerClient } from "@/lib/supabase";
 
 export async function POST(request: Request) {
@@ -14,13 +15,16 @@ export async function POST(request: Request) {
     );
   }
 
-  const supabase = await getSupabaseServerClient();
-  if (!supabase) {
-    return NextResponse.json({ message: "자동진단 저장 환경이 설정되지 않았습니다." }, { status: 503 });
-  }
-
   const input = parsed.data;
   const result = runPlaceAudit(input);
+  const fallbackId = encodeSelfAuditInput(input);
+  const supabase = await getSupabaseServerClient();
+
+  if (!supabase) {
+    console.warn("[audit] Supabase client unavailable. Using self-contained audit result.");
+    return NextResponse.json({ ok: true, id: fallbackId, stored: false });
+  }
+
   const { data, error } = await supabase
     .from("audits")
     .insert({
@@ -36,8 +40,9 @@ export async function POST(request: Request) {
     .single();
 
   if (error || !data) {
-    return NextResponse.json({ message: "자동진단 결과를 저장하지 못했습니다." }, { status: 500 });
+    console.warn("[audit] Failed to store audit result. Using self-contained audit result.");
+    return NextResponse.json({ ok: true, id: fallbackId, stored: false });
   }
 
-  return NextResponse.json({ ok: true, id: data.id });
+  return NextResponse.json({ ok: true, id: data.id, stored: true });
 }

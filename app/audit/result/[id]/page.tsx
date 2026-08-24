@@ -10,8 +10,8 @@ import { Section, SectionHeading } from "@/components/ui/section";
 import { Breadcrumbs } from "@/components/seo/breadcrumbs";
 import { ANALYTICS_EVENTS } from "@/lib/analytics/events";
 import { getAuditById } from "@/lib/admin/db";
-import type { AuditResult, AuditStatus } from "@/lib/audit/rules";
-import type { PlaceAuditInput } from "@/lib/audit/schema";
+import { runPlaceAudit, type AuditResult, type AuditStatus } from "@/lib/audit/rules";
+import { decodeSelfAuditInput } from "@/lib/audit/shareable";
 import { getPublicSiteProfile } from "@/lib/public/site-config";
 import { createPublicMetadata } from "@/lib/seo";
 
@@ -38,17 +38,23 @@ function safeResult(value: Record<string, unknown>): AuditResult {
   return value as unknown as AuditResult;
 }
 
-function safeInput(value: Record<string, unknown>): Partial<PlaceAuditInput> {
-  return value as Partial<PlaceAuditInput>;
-}
-
 export default async function AuditResultPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
-  const [{ site }, { data: audit, error }] = await Promise.all([getPublicSiteProfile(), getAuditById(id)]);
-  if (!audit && !error) notFound();
+  const selfInput = decodeSelfAuditInput(id);
+  const [{ site }, auditResult] = await Promise.all([
+    getPublicSiteProfile(),
+    selfInput ? Promise.resolve({ data: null, error: null }) : getAuditById(id),
+  ]);
+  const { data: audit, error } = auditResult;
 
-  const result = audit ? safeResult(audit.result_data) : null;
-  const input = audit ? safeInput(audit.input_data) : {};
+  if (!audit && !selfInput && !error) notFound();
+
+  const result = audit ? safeResult(audit.result_data) : selfInput ? runPlaceAudit(selfInput) : null;
+  const businessName = audit?.business_name || selfInput?.businessName || "";
+  const industry = audit?.industry || selfInput?.industry || "";
+  const region = audit?.region || selfInput?.region || "";
+  const placeUrl = audit?.place_url || selfInput?.placeUrl || "";
+  const storedAuditId = audit?.id;
 
   return (
     <>
@@ -63,7 +69,7 @@ export default async function AuditResultPage({ params }: { params: Promise<{ id
         {error ? (
           <div className="rounded-[8px] border border-rose-200 bg-rose-50 p-5 text-sm font-bold text-rose-800">{error}</div>
         ) : null}
-        {audit && result ? (
+        {result ? (
           <div className="grid gap-10 lg:grid-cols-[1fr_380px] lg:items-start">
             <div className="grid gap-6">
               <div className="rounded-[8px] border border-line bg-white p-6 shadow-[0_18px_60px_rgba(31,42,46,0.08)] sm:p-8">
@@ -71,12 +77,12 @@ export default async function AuditResultPage({ params }: { params: Promise<{ id
                   Rule Based Auto Audit
                 </p>
                 <h1 className="mt-4 text-3xl font-extrabold leading-tight text-ink sm:text-4xl">
-                  {audit.business_name} 자동진단 결과
+                  {businessName} 자동진단 결과
                 </h1>
                 <p className="mt-4 text-base leading-8 text-muted">{result.summary}</p>
                 <div className="mt-6 grid gap-3 rounded-[8px] bg-ivory p-5 text-sm leading-7 text-muted sm:grid-cols-2">
-                  <p><span className="font-bold text-ink">업종</span> {audit.industry}</p>
-                  <p><span className="font-bold text-ink">지역</span> {audit.region}</p>
+                  <p><span className="font-bold text-ink">업종</span> {industry}</p>
+                  <p><span className="font-bold text-ink">지역</span> {region}</p>
                   <p><span className="font-bold text-ink">데이터 방식</span> 사용자 직접 입력</p>
                   <p><span className="font-bold text-ink">자동수집</span> 네이버 데이터 수집 없음</p>
                 </div>
@@ -172,7 +178,7 @@ export default async function AuditResultPage({ params }: { params: Promise<{ id
         ) : null}
       </Section>
 
-      {audit ? (
+      {result ? (
         <Section id="audit-consultation" className="bg-pale-blue/50">
           <div className="grid gap-10 lg:grid-cols-[0.82fr_1.18fr] lg:items-start">
             <SectionHeading
@@ -182,13 +188,13 @@ export default async function AuditResultPage({ params }: { params: Promise<{ id
             />
             <LeadForm
               type="free_audit"
-              auditId={audit.id}
+              auditId={storedAuditId}
               kakaoChatUrl={site.kakaoChatUrl}
               initialValues={{
-                businessName: audit.business_name,
-                industry: audit.industry,
-                region: audit.region,
-                placeUrl: audit.place_url || input.placeUrl || "",
+                businessName,
+                industry,
+                region,
+                placeUrl,
                 concerns: result?.priorityImprovements.map((item) => item.label).join(", ") || "",
                 interestedServices: ["네이버 플레이스"],
               }}
