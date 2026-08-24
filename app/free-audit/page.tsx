@@ -33,15 +33,15 @@ export default async function FreeAuditPage() {
               어디에서 고객을 놓치고 있을까요?
             </h1>
             <p className="mt-5 text-lg leading-8 text-muted">
-              광고를 시작하기 전에 현재 플레이스 상태부터 확인하세요. 입력한 정보를 기준으로
-              기본 자동진단 결과를 먼저 보고, 필요한 경우 상세 진단과 상담으로 이어갈 수 있습니다.
+              광고를 시작하기 전에 현재 플레이스 상태부터 확인하세요. 네이버 플레이스 주소를
+              입력하면 공개 정보에서 확인 가능한 항목만 기준으로 기본 자동진단 결과를 먼저 보여드립니다.
             </p>
             <div className="mt-7 rounded-[8px] border border-line bg-white p-5">
               <div className="flex gap-3">
                 <ClipboardCheck className="mt-1 text-accent" size={22} aria-hidden="true" />
                 <p className="text-sm leading-7 text-muted">
-                  네이버 데이터를 자동 수집하거나 확인되지 않은 순위를 제공하지 않습니다. 사용자가
-                  직접 입력한 상태를 Rule 기반으로 분석하고, 실제 화면 확인은 상담 단계에서 진행합니다.
+                  로그인, CAPTCHA, 비공개 데이터 접근은 하지 않습니다. 네이버 공개 페이지에서 확인되지
+                  않는 리뷰·메뉴·영업시간은 추측하지 않고 점수 계산에서 제외합니다.
                 </p>
               </div>
             </div>

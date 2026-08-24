@@ -8,6 +8,9 @@ import { leadTypeLabels } from "@/lib/admin/constants";
 import { formatDateTime, formatPrice, isSafeHttpUrl } from "@/lib/admin/format";
 import { getLead, getLeadAudit, getLeadOrders } from "@/lib/admin/db";
 import type { AuditResult } from "@/lib/audit/rules";
+import type { PlaceAnalysisResult } from "@/lib/naver-place/types";
+
+type AdminAuditResult = AuditResult & Partial<Pick<PlaceAnalysisResult, "score" | "grade">>;
 
 function InfoRow({ label, value }: { label: string; value?: string | null }) {
   return (
@@ -22,6 +25,8 @@ export default async function LeadDetailPage({ params }: { params: Promise<{ id:
   const { id } = await params;
   const [{ data: lead, error }, ordersResult, auditResult] = await Promise.all([getLead(id), getLeadOrders(id), getLeadAudit(id)]);
   const paidOrders = ordersResult.data.filter((order) => order.status === "paid");
+  const auditAnalysis = auditResult.data?.result_data as unknown as AdminAuditResult | undefined;
+  const auditInput = auditResult.data?.input_data as { placeId?: string; mode?: string } | undefined;
   const firstPaidAt = paidOrders
     .map((order) => order.paid_at)
     .filter(Boolean)
@@ -113,17 +118,20 @@ export default async function LeadDetailPage({ params }: { params: Promise<{ id:
                     <InfoRow label="입력 업체명" value={auditResult.data.business_name} />
                     <InfoRow label="입력 업종" value={auditResult.data.industry} />
                     <InfoRow label="입력 지역" value={auditResult.data.region} />
+                    <InfoRow label="Place ID" value={auditResult.data.place_id || auditInput?.placeId || "-"} />
+                    <InfoRow label="자동진단 점수" value={auditAnalysis?.score !== undefined && auditAnalysis.score !== null ? `${auditAnalysis.score}점` : "-"} />
+                    <InfoRow label="자동진단 등급" value={auditAnalysis?.grade || "-"} />
                   </dl>
                   <div className="rounded-[8px] bg-slate-50 p-4">
                     <p className="text-xs font-bold uppercase text-slate-500">핵심 결과</p>
                     <p className="mt-2 text-sm leading-6 text-slate-900">
-                      {(auditResult.data.result_data as unknown as AuditResult).summary || "-"}
+                      {auditAnalysis?.summary || "-"}
                     </p>
                   </div>
                   <div>
                     <p className="text-xs font-bold uppercase text-slate-500">우선 개선사항</p>
                     <ul className="mt-3 grid gap-2 text-sm leading-6 text-slate-700">
-                      {((auditResult.data.result_data as unknown as AuditResult).priorityImprovements || []).map((item) => (
+                      {(auditAnalysis?.priorityImprovements || []).map((item) => (
                         <li key={`${item.area}-${item.label}`}>· {item.label}: {item.summary}</li>
                       ))}
                     </ul>

@@ -11,7 +11,8 @@ import { Breadcrumbs } from "@/components/seo/breadcrumbs";
 import { ANALYTICS_EVENTS } from "@/lib/analytics/events";
 import { getAuditById } from "@/lib/admin/db";
 import { runPlaceAudit, type AuditResult, type AuditStatus } from "@/lib/audit/rules";
-import { decodeSelfAuditInput } from "@/lib/audit/shareable";
+import { decodeSelfAuditInput, decodeSelfPlaceAuditSnapshot } from "@/lib/audit/shareable";
+import type { PlaceAnalysisFinding, PlaceAnalysisResult } from "@/lib/naver-place/types";
 import { getPublicSiteProfile } from "@/lib/public/site-config";
 import { createPublicMetadata } from "@/lib/seo";
 
@@ -38,22 +39,44 @@ function safeResult(value: Record<string, unknown>): AuditResult {
   return value as unknown as AuditResult;
 }
 
+function safePlaceResult(value: Record<string, unknown>): PlaceAnalysisResult | null {
+  return value?.mode === "naver_place_url" ? (value as unknown as PlaceAnalysisResult) : null;
+}
+
+function formatDateTime(value?: string | null) {
+  if (!value) return "확인 불가";
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return "확인 불가";
+  return new Intl.DateTimeFormat("ko-KR", {
+    dateStyle: "medium",
+    timeStyle: "short",
+    timeZone: "Asia/Seoul",
+  }).format(date);
+}
+
+function regionFromAddress(address?: string | null) {
+  if (!address) return "";
+  return address.split(/\s+/).slice(0, 2).join(" ");
+}
+
 export default async function AuditResultPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
-  const selfInput = decodeSelfAuditInput(id);
+  const selfPlaceSnapshot = decodeSelfPlaceAuditSnapshot(id);
+  const selfInput = selfPlaceSnapshot ? null : decodeSelfAuditInput(id);
   const [{ site }, auditResult] = await Promise.all([
     getPublicSiteProfile(),
-    selfInput ? Promise.resolve({ data: null, error: null }) : getAuditById(id),
+    selfPlaceSnapshot || selfInput ? Promise.resolve({ data: null, error: null }) : getAuditById(id),
   ]);
   const { data: audit, error } = auditResult;
 
-  if (!audit && !selfInput && !error) notFound();
+  if (!audit && !selfPlaceSnapshot && !selfInput && !error) notFound();
 
-  const result = audit ? safeResult(audit.result_data) : selfInput ? runPlaceAudit(selfInput) : null;
-  const businessName = audit?.business_name || selfInput?.businessName || "";
-  const industry = audit?.industry || selfInput?.industry || "";
-  const region = audit?.region || selfInput?.region || "";
-  const placeUrl = audit?.place_url || selfInput?.placeUrl || "";
+  const placeResult = selfPlaceSnapshot?.analysis || (audit ? safePlaceResult(audit.result_data) : null);
+  const result = placeResult || (audit ? safeResult(audit.result_data) : selfInput ? runPlaceAudit(selfInput) : null);
+  const businessName = placeResult?.place.name || audit?.business_name || selfInput?.businessName || "";
+  const industry = placeResult?.place.category || audit?.industry || selfInput?.industry || "";
+  const region = audit?.region || selfInput?.region || regionFromAddress(placeResult?.place.roadAddress || placeResult?.place.address);
+  const placeUrl = placeResult?.place.normalizedUrl || audit?.place_url || selfInput?.placeUrl || "";
   const storedAuditId = audit?.id;
 
   return (
@@ -80,13 +103,48 @@ export default async function AuditResultPage({ params }: { params: Promise<{ id
                   {businessName} 자동진단 결과
                 </h1>
                 <p className="mt-4 text-base leading-8 text-muted">{result.summary}</p>
+                {placeResult ? (
+                  <div className="mt-6 grid gap-3 sm:grid-cols-3">
+                    <div className="rounded-[8px] bg-ink p-4 text-white">
+                      <p className="text-xs font-bold text-white/65">진단 점수</p>
+                      <p className="mt-2 text-3xl font-extrabold">{placeResult.score ?? "-"}점</p>
+                    </div>
+                    <div className="rounded-[8px] bg-pale-mint p-4">
+                      <p className="text-xs font-bold text-accent">등급</p>
+                      <p className="mt-2 text-3xl font-extrabold text-ink">{placeResult.grade}</p>
+                    </div>
+                    <div className="rounded-[8px] bg-ivory p-4">
+                      <p className="text-xs font-bold text-muted">계산 기준</p>
+                      <p className="mt-2 text-lg font-extrabold text-ink">
+                        {placeResult.earnedScore}/{placeResult.maxScore}
+                      </p>
+                    </div>
+                  </div>
+                ) : null}
                 <div className="mt-6 grid gap-3 rounded-[8px] bg-ivory p-5 text-sm leading-7 text-muted sm:grid-cols-2">
                   <p><span className="font-bold text-ink">업종</span> {industry}</p>
                   <p><span className="font-bold text-ink">지역</span> {region}</p>
-                  <p><span className="font-bold text-ink">데이터 방식</span> 사용자 직접 입력</p>
-                  <p><span className="font-bold text-ink">자동수집</span> 네이버 데이터 수집 없음</p>
+                  <p><span className="font-bold text-ink">데이터 방식</span> {placeResult ? placeResult.dataSourceLabel : "사용자 입력 기반 이전 진단"}</p>
+                  <p><span className="font-bold text-ink">마지막 확인</span> {placeResult ? formatDateTime(placeResult.fetchedAt) : "상담 단계 확인"}</p>
                 </div>
               </div>
+
+              {placeResult ? (
+                <section className="rounded-[8px] border border-line bg-white p-6">
+                  <h2 className="text-xl font-extrabold text-ink">진단 근거 데이터</h2>
+                  <div className="mt-5 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+                    {placeResult.evidence.map((item) => (
+                      <div
+                        key={item.label}
+                        className={`rounded-[8px] border p-4 ${item.available ? "border-line bg-ivory" : "border-slate-200 bg-slate-50 text-muted"}`}
+                      >
+                        <p className="text-xs font-bold text-muted">{item.label}</p>
+                        <p className="mt-2 text-base font-extrabold text-ink">{item.value}</p>
+                      </div>
+                    ))}
+                  </div>
+                </section>
+              ) : null}
 
               <section className="rounded-[8px] border border-line bg-white p-6">
                 <h2 className="flex items-center gap-2 text-xl font-extrabold text-ink">
@@ -116,6 +174,11 @@ export default async function AuditResultPage({ params }: { params: Promise<{ id
                       </div>
                       <p className="mt-3 text-sm font-bold text-ink">{item.summary}</p>
                       <p className="mt-3 text-sm leading-7 text-muted">{item.explanation}</p>
+                      {(item as PlaceAnalysisFinding).evidence ? (
+                        <p className="mt-3 rounded-[6px] bg-white p-3 text-xs font-bold leading-6 text-ink">
+                          판별 근거: {(item as PlaceAnalysisFinding).evidence}
+                        </p>
+                      ) : null}
                       <p className="mt-3 text-sm leading-7 text-accent">{item.recommendation}</p>
                     </article>
                   ))}
@@ -133,6 +196,20 @@ export default async function AuditResultPage({ params }: { params: Promise<{ id
                   ))}
                 </ul>
               </section>
+
+              {placeResult?.unavailableChecks.length ? (
+                <section className="rounded-[8px] border border-line bg-white p-6">
+                  <h2 className="text-xl font-extrabold text-ink">점수에서 제외한 항목</h2>
+                  <p className="mt-3 text-sm leading-7 text-muted">
+                    네이버 공개 정보에서 확인되지 않은 값은 0점 처리하지 않고 평가 대상에서 제외했습니다.
+                  </p>
+                  <ul className="mt-5 grid gap-2 text-sm leading-7 text-muted">
+                    {placeResult.unavailableChecks.map((item) => (
+                      <li key={item}>· {item}</li>
+                    ))}
+                  </ul>
+                </section>
+              ) : null}
 
               <section className="rounded-[8px] border border-line bg-white p-6">
                 <h2 className="text-xl font-extrabold text-ink">추천 서비스</h2>
@@ -157,7 +234,7 @@ export default async function AuditResultPage({ params }: { params: Promise<{ id
                   상세 진단 신청
                 </h2>
                 <p className="mt-3 text-sm leading-7 text-muted">
-                  자동진단은 입력값 기반의 기본 점검입니다. 실제 플레이스 화면과 업종 상황은 상담 단계에서 확인합니다.
+                  자동진단은 네이버 공개 정보에서 확인 가능한 값만 기준으로 계산합니다. 실제 업종 상황과 운영 의도는 상담 단계에서 함께 확인합니다.
                 </p>
                 <div className="mt-5 grid gap-3">
                   <ButtonLink
@@ -171,7 +248,7 @@ export default async function AuditResultPage({ params }: { params: Promise<{ id
                 </div>
               </div>
               <div className="rounded-[8px] border border-line bg-ivory p-5 text-xs leading-6 text-muted">
-                확인되지 않은 네이버 순위, 리뷰 내용, 경쟁업체 정보는 생성하지 않았습니다. 결과는 사용자가 직접 입력한 상태만 기준으로 합니다.
+                확인되지 않은 네이버 순위, 비공개 리뷰 내용, 경쟁업체 정보는 생성하지 않았습니다. 수집 실패 항목은 점수에서 제외했습니다.
               </div>
             </aside>
           </div>
@@ -193,7 +270,7 @@ export default async function AuditResultPage({ params }: { params: Promise<{ id
               initialValues={{
                 businessName,
                 industry,
-                region,
+                region: region || "확인 필요",
                 placeUrl,
                 concerns: result?.priorityImprovements.map((item) => item.label).join(", ") || "",
                 interestedServices: ["네이버 플레이스"],

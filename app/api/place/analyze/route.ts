@@ -19,19 +19,8 @@ export async function POST(request: NextRequest) {
   });
 
   if (!result.success) {
-    return NextResponse.json(
-      {
-        ok: false,
-        ...result,
-      },
-      { status: responseStatus(result.code) },
-    );
+    return NextResponse.json(result, { status: responseStatus(result.code) });
   }
 
-  return NextResponse.json({
-    ok: true,
-    id: result.id,
-    stored: result.stored,
-    cached: result.cached,
-  });
+  return NextResponse.json(result);
 }

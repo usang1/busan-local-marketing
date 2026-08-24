@@ -111,8 +111,14 @@ export type Audit = {
   industry: string;
   region: string;
   place_url: string | null;
+  place_id?: string | null;
+  place_name?: string | null;
   input_data: Record<string, unknown>;
   result_data: Record<string, unknown>;
+  raw_place_data?: Record<string, unknown> | null;
+  analysis_result?: Record<string, unknown> | null;
+  score?: number | null;
+  fetched_at?: string | null;
   status: "completed" | "consultation_requested" | "archived";
   created_at: string;
   updated_at: string;

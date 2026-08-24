@@ -1,6 +1,6 @@
 import Image from "next/image";
 import Link from "next/link";
-import { ArrowRight, ClipboardCheck, MapPin, MousePointerClick, PhoneCall, Search, Star } from "lucide-react";
+import { ArrowRight, ClipboardCheck, ListChecks, MapPin, MousePointerClick, PhoneCall, Search, SearchCheck, Star } from "lucide-react";
 import { BrandLogo } from "@/components/layout/brand-logo";
 import { ButtonLink } from "@/components/ui/button";
 import { KakaoCta } from "@/components/ui/kakao-cta";
@@ -66,15 +66,48 @@ export default async function Home() {
               이어지는 과정을 함께 점검합니다. 광고 계약 전에 현재 플레이스 상태부터
               확인하세요.
             </p>
+            <div className="mt-7 rounded-[8px] border border-accent/30 bg-ink p-5 text-white shadow-[0_22px_55px_rgba(31,42,46,0.18)] sm:p-6">
+              <div className="flex flex-col gap-5 sm:flex-row sm:items-center sm:justify-between">
+                <div>
+                  <p className="inline-flex items-center gap-2 rounded-[6px] bg-white/10 px-3 py-1 text-sm font-bold text-pale-mint">
+                    <SearchCheck size={16} aria-hidden="true" />
+                    네이버 플레이스 자동진단
+                  </p>
+                  <h2 className="mt-3 text-2xl font-extrabold leading-tight sm:text-3xl">
+                    지금 입력하고 바로 기본 결과를 확인하세요
+                  </h2>
+                  <p className="mt-3 max-w-xl text-sm leading-7 text-white/78">
+                    업체명, 지역, 사진·메뉴·리뷰 상태를 입력하면 우선 개선할 부분을 먼저 정리합니다.
+                  </p>
+                </div>
+                <ButtonLink
+                  href="/free-audit"
+                  size="lg"
+                  className="w-full shrink-0 border-white bg-white text-ink hover:bg-pale-mint sm:w-fit"
+                  data-analytics-event={ANALYTICS_EVENTS.CLICK_FREE_AUDIT}
+                  data-analytics-location="hero_audit_panel"
+                >
+                  <ListChecks size={19} aria-hidden="true" />
+                  자동진단 시작
+                </ButtonLink>
+              </div>
+              <div className="mt-5 grid gap-2 text-sm font-bold text-white/82 sm:grid-cols-3">
+                {["사진·메뉴 상태", "리뷰·답변 상태", "전화·예약 동선"].map((item) => (
+                  <span key={item} className="rounded-[6px] border border-white/12 bg-white/8 px-3 py-2">
+                    {item}
+                  </span>
+                ))}
+              </div>
+            </div>
             <div className="mt-8 grid gap-3 sm:flex">
               <ButtonLink href="/free-audit" size="lg" data-analytics-event={ANALYTICS_EVENTS.CLICK_FREE_AUDIT} data-analytics-location="hero">
                 <ClipboardCheck size={19} aria-hidden="true" />
-                무료 플레이스 진단받기
+                무료 자동진단 받기
               </ButtonLink>
               <KakaoCta size="lg" location="hero" kakaoChatUrl={site.kakaoChatUrl} />
             </div>
             <p className="mt-4 text-sm leading-6 text-muted">
-              광고 계약 없이 현재 플레이스 상태부터 확인해보세요. 담당자가 확인 후 상담합니다.
+              자동진단은 사용자가 입력한 정보만 기준으로 하며, 필요하면 담당자가 상세 상담으로 이어서 확인합니다.
             </p>
           </div>
           <div className="relative fade-up">
