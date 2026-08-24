@@ -36,7 +36,7 @@ export default async function PricingPage() {
           </div>
         ) : (
           <div className="rounded-[8px] border border-line bg-white p-8 text-muted">
-            공개된 상품이 없습니다. 상품이 준비되면 이 영역에 표시됩니다.
+            정해진 패키지보다 업체 상황에 맞춘 견적 상담으로 안내합니다. 카카오톡에 업체명, 업종, 지역, 필요한 서비스를 남겨주세요.
           </div>
         )}
         <div className="mt-8 rounded-[8px] border border-line bg-white p-5 text-sm leading-7 text-muted">
