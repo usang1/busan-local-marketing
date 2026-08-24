@@ -9,11 +9,23 @@ const allowedNaverHosts = new Set([
   "naver.me",
 ]);
 
-const placePathPatterns = [
-  /\/p\/entry\/place\/(\d+)(?:[/?#]|$)/,
-  /\/entry\/place\/(\d+)(?:[/?#]|$)/,
-  /\/(?:place|restaurant|cafe|hospital|hairshop|beauty|store|business|accommodation|lodging|attraction)\/(\d+)(?:[/?#]|$)/,
-];
+const placePathKinds = [
+  "place",
+  "restaurant",
+  "cafe",
+  "hospital",
+  "hairshop",
+  "beauty",
+  "store",
+  "business",
+  "accommodation",
+  "lodging",
+  "attraction",
+] as const;
+
+type PlacePathKind = (typeof placePathKinds)[number];
+
+const placePathKindPattern = placePathKinds.join("|");
 
 export type ParsedNaverPlaceUrl =
   | {
@@ -42,19 +54,25 @@ export function isAllowedNaverHost(hostname: string) {
   return allowedNaverHosts.has(hostname.toLowerCase());
 }
 
-export function normalizePlaceHomeUrl(placeId: string) {
-  return `https://m.place.naver.com/place/${placeId}/home`;
+export function normalizePlaceHomeUrl(placeId: string, pathKind: PlacePathKind = "place") {
+  return `https://m.place.naver.com/${pathKind}/${placeId}/home`;
 }
 
-function extractPlaceId(url: URL) {
+function extractPlaceIdentity(url: URL) {
   const pathname = decodeURIComponent(url.pathname);
-  for (const pattern of placePathPatterns) {
-    const match = pathname.match(pattern);
-    if (match?.[1]) return match[1];
+  const entryMatch = pathname.match(/\/(?:p\/)?entry\/place\/(\d+)(?:[/?#]|$)/);
+  if (entryMatch?.[1]) return { placeId: entryMatch[1], pathKind: "place" as const };
+
+  const kindMatch = pathname.match(new RegExp(`/(?:${placePathKindPattern})/(\\d+)(?:[/?#]|$)`));
+  if (kindMatch?.[1]) {
+    const pathKind = pathname.split("/").find((part): part is PlacePathKind =>
+      (placePathKinds as readonly string[]).includes(part),
+    );
+    return { placeId: kindMatch[1], pathKind: pathKind || "place" };
   }
 
   const placeId = url.searchParams.get("placeId") || url.searchParams.get("place_id");
-  return placeId && /^\d+$/.test(placeId) ? placeId : null;
+  return placeId && /^\d+$/.test(placeId) ? { placeId, pathKind: "place" as const } : null;
 }
 
 export function extractNaverPlaceId(input: string): ParsedNaverPlaceUrl {
@@ -87,8 +105,8 @@ export function extractNaverPlaceId(input: string): ParsedNaverPlaceUrl {
     };
   }
 
-  const placeId = extractPlaceId(url);
-  if (!placeId) {
+  const placeIdentity = extractPlaceIdentity(url);
+  if (!placeIdentity) {
     return {
       valid: false,
       reason: "missing_place_id",
@@ -98,8 +116,8 @@ export function extractNaverPlaceId(input: string): ParsedNaverPlaceUrl {
 
   return {
     valid: true,
-    placeId,
-    normalizedUrl: normalizePlaceHomeUrl(placeId),
+    placeId: placeIdentity.placeId,
+    normalizedUrl: normalizePlaceHomeUrl(placeIdentity.placeId, placeIdentity.pathKind),
     inputUrl: url.toString(),
   };
 }
@@ -113,6 +131,43 @@ function safeRedirectUrl(location: string, baseUrl: string) {
   } catch {
     return null;
   }
+}
+
+function findPlaceUrlInHtml(html: string, baseUrl: string) {
+  const decoded = html.replaceAll("\\/", "/").replace(/&amp;/g, "&");
+  const candidates = [
+    ...decoded.matchAll(/https?:\/\/(?:m\.place|pcmap\.place|place\.map|map|m\.map)\.naver\.com\/[^"'<>\s)]+/gi),
+    ...decoded.matchAll(/(?:href|content)=["']([^"']*(?:\/(?:place|restaurant|cafe|hospital|hairshop|beauty|store|business|accommodation|lodging|attraction)\/|\/entry\/place\/|\/p\/entry\/place\/)\d+[^"']*)["']/gi),
+  ];
+
+  for (const match of candidates) {
+    const raw = match[1] || match[0];
+    const safeUrl = safeRedirectUrl(raw, baseUrl);
+    if (!safeUrl) continue;
+    const parsed = extractNaverPlaceId(safeUrl);
+    if (parsed.valid) return parsed;
+  }
+
+  return null;
+}
+
+async function fetchRedirectLocation(url: string, method: "HEAD" | "GET") {
+  const response = await fetch(url, {
+    method,
+    redirect: "manual",
+    signal: AbortSignal.timeout(4000),
+    headers: {
+      accept: "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
+      "accept-language": "ko-KR,ko;q=0.9,en;q=0.5",
+      "user-agent":
+        "Mozilla/5.0 (compatible; MarkivoPlaceAudit/1.0; +https://markivo.kr)",
+    },
+  });
+
+  return {
+    location: response.headers.get("location"),
+    html: method === "GET" && response.ok ? await response.text() : "",
+  };
 }
 
 export async function resolveNaverPlaceUrl(input: string): Promise<ParsedNaverPlaceUrl> {
@@ -130,22 +185,30 @@ export async function resolveNaverPlaceUrl(input: string): Promise<ParsedNaverPl
   }
 
   for (let depth = 0; depth < 3; depth += 1) {
-    try {
-      const response = await fetch(currentUrl, {
-        method: "HEAD",
-        redirect: "manual",
-        signal: AbortSignal.timeout(4000),
-      });
-      const location = response.headers.get("location");
-      if (!location) break;
-      const nextUrl = safeRedirectUrl(location, currentUrl);
-      if (!nextUrl) break;
-      currentUrl = nextUrl;
-      const nextParsed = extractNaverPlaceId(currentUrl);
-      if (nextParsed.valid) return nextParsed;
-    } catch {
-      break;
+    let location: string | null = null;
+
+    for (const method of ["HEAD", "GET"] as const) {
+      try {
+        const result = await fetchRedirectLocation(currentUrl, method);
+        location = result.location;
+
+        if (!location && result.html) {
+          const htmlParsed = findPlaceUrlInHtml(result.html, currentUrl);
+          if (htmlParsed) return htmlParsed;
+        }
+
+        if (location || result.html) break;
+      } catch {
+        continue;
+      }
     }
+
+    if (!location) break;
+    const nextUrl = safeRedirectUrl(location, currentUrl);
+    if (!nextUrl) break;
+    currentUrl = nextUrl;
+    const nextParsed = extractNaverPlaceId(currentUrl);
+    if (nextParsed.valid) return nextParsed;
   }
 
   return {

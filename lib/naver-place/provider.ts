@@ -178,7 +178,7 @@ async function fetchAllowedText(initialUrl: string) {
       headers: {
         accept: "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
         "accept-language": "ko-KR,ko;q=0.9,en;q=0.5",
-        "user-agent": "MarkivoPlaceAudit/1.0 (+https://markivo.kr)",
+        "user-agent": "Mozilla/5.0 (compatible; MarkivoPlaceAudit/1.0; +https://markivo.kr)",
       },
     });
 
@@ -204,6 +204,30 @@ async function fetchAllowedText(initialUrl: string) {
   return { status: 0, text: "", finalUrl: currentUrl };
 }
 
+function limitedPlaceData({
+  placeId,
+  sourceUrl,
+  normalizedUrl,
+  finalUrl,
+  reason,
+}: {
+  placeId: string;
+  sourceUrl: string;
+  normalizedUrl: string;
+  finalUrl?: string;
+  reason: string;
+}): NaverPlaceData {
+  return emptyPlaceData({
+    placeId,
+    sourceUrl,
+    normalizedUrl: finalUrl || normalizedUrl,
+    warnings: [
+      reason,
+      "네이버 공개 페이지에서 확인되지 않은 값은 점수 계산에서 제외했습니다.",
+    ],
+  });
+}
+
 export class PublicNaverPlaceProvider implements NaverPlaceProvider {
   async getPlace({
     placeId,
@@ -220,9 +244,13 @@ export class PublicNaverPlaceProvider implements NaverPlaceProvider {
       fetched = await fetchAllowedText(normalizedUrl);
     } catch {
       return {
-        success: false,
-        code: "PLACE_FETCH_FAILED",
-        message: "현재 네이버 플레이스 정보를 불러오지 못했습니다. 잠시 후 다시 시도해주세요.",
+        success: true,
+        place: limitedPlaceData({
+          placeId,
+          sourceUrl,
+          normalizedUrl,
+          reason: "네이버 공개 페이지 요청이 실패해 제한 진단으로 처리했습니다.",
+        }),
       };
     }
 
@@ -236,9 +264,14 @@ export class PublicNaverPlaceProvider implements NaverPlaceProvider {
 
     if (fetched.status < 200 || fetched.status >= 400 || !fetched.text) {
       return {
-        success: false,
-        code: "PLACE_FETCH_FAILED",
-        message: "현재 네이버 플레이스 정보를 불러오지 못했습니다. 잠시 후 다시 시도해주세요.",
+        success: true,
+        place: limitedPlaceData({
+          placeId,
+          sourceUrl,
+          normalizedUrl,
+          finalUrl: fetched.finalUrl,
+          reason: `네이버 공개 페이지 응답을 분석할 수 없어 제한 진단으로 처리했습니다. 응답 상태: ${fetched.status || "확인 불가"}`,
+        }),
       };
     }
 

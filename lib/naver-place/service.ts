@@ -117,7 +117,9 @@ export async function createPlaceAuditFromUrl(placeUrl: string, options: CreateA
 
     place = result.place;
     analysis = analyzePlace(place);
-    setCachedPlaceAnalysis(parsed.placeId, place, analysis);
+    if (analysis.maxScore > 0) {
+      setCachedPlaceAnalysis(parsed.placeId, place, analysis);
+    }
     usedCache = false;
   }
 

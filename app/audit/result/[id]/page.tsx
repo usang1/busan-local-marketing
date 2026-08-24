@@ -73,7 +73,11 @@ export default async function AuditResultPage({ params }: { params: Promise<{ id
 
   const placeResult = selfPlaceSnapshot?.analysis || (audit ? safePlaceResult(audit.result_data) : null);
   const result = placeResult || (audit ? safeResult(audit.result_data) : selfInput ? runPlaceAudit(selfInput) : null);
-  const businessName = placeResult?.place.name || audit?.business_name || selfInput?.businessName || "";
+  const businessName =
+    placeResult?.place.name ||
+    audit?.business_name ||
+    selfInput?.businessName ||
+    (placeResult ? `네이버 플레이스 ${placeResult.place.placeId}` : "");
   const industry = placeResult?.place.category || audit?.industry || selfInput?.industry || "";
   const region = audit?.region || selfInput?.region || regionFromAddress(placeResult?.place.roadAddress || placeResult?.place.address);
   const placeUrl = placeResult?.place.normalizedUrl || audit?.place_url || selfInput?.placeUrl || "";
@@ -132,6 +136,13 @@ export default async function AuditResultPage({ params }: { params: Promise<{ id
               {placeResult ? (
                 <section className="rounded-[8px] border border-line bg-white p-6">
                   <h2 className="text-xl font-extrabold text-ink">진단 근거 데이터</h2>
+                  {placeResult.place.warnings.length ? (
+                    <div className="mt-4 rounded-[8px] border border-amber-200 bg-amber-50 p-4 text-sm leading-7 text-amber-900">
+                      {placeResult.place.warnings.map((warning) => (
+                        <p key={warning}>· {warning}</p>
+                      ))}
+                    </div>
+                  ) : null}
                   <div className="mt-5 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
                     {placeResult.evidence.map((item) => (
                       <div
@@ -164,7 +175,7 @@ export default async function AuditResultPage({ params }: { params: Promise<{ id
                   우선 개선할 부분 3개
                 </h2>
                 <div className="mt-5 grid gap-4">
-                  {result.priorityImprovements.map((item) => (
+                  {result.priorityImprovements.length ? result.priorityImprovements.map((item) => (
                     <article key={`${item.area}-${item.label}`} className="rounded-[8px] border border-line bg-ivory p-5">
                       <div className="flex flex-wrap items-center gap-2">
                         <span className={`rounded-[6px] border px-2.5 py-1 text-xs font-bold ${statusClass(item.status)}`}>
@@ -181,7 +192,11 @@ export default async function AuditResultPage({ params }: { params: Promise<{ id
                       ) : null}
                       <p className="mt-3 text-sm leading-7 text-accent">{item.recommendation}</p>
                     </article>
-                  ))}
+                  )) : (
+                    <p className="rounded-[8px] bg-ivory p-4 text-sm leading-7 text-muted">
+                      공개 정보에서 평가 가능한 항목이 부족해 자동으로 우선순위를 정하지 않았습니다. 상담 단계에서 실제 운영 정보와 함께 확인이 필요합니다.
+                    </p>
+                  )}
                 </div>
               </section>
 
