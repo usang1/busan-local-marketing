@@ -5,18 +5,24 @@ export function emptyPlaceData({
   sourceUrl,
   normalizedUrl,
   fetchedAt = new Date().toISOString(),
+  dataStatus = "partial",
+  failureReason = null,
   warnings = [],
 }: {
   placeId: string;
   sourceUrl: string;
   normalizedUrl: string;
   fetchedAt?: string;
+  dataStatus?: NaverPlaceData["dataStatus"];
+  failureReason?: string | null;
   warnings?: string[];
 }): NaverPlaceData {
   return {
     placeId,
     sourceUrl,
     normalizedUrl,
+    dataStatus,
+    failureReason,
     name: null,
     category: null,
     address: null,

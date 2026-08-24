@@ -12,7 +12,7 @@ import { ANALYTICS_EVENTS } from "@/lib/analytics/events";
 import { getAuditById } from "@/lib/admin/db";
 import { runPlaceAudit, type AuditResult, type AuditStatus } from "@/lib/audit/rules";
 import { decodeSelfAuditInput, decodeSelfPlaceAuditSnapshot } from "@/lib/audit/shareable";
-import type { PlaceAnalysisFinding, PlaceAnalysisResult } from "@/lib/naver-place/types";
+import type { PlaceAnalysisFinding, PlaceAnalysisResult, PlaceDataStatus } from "@/lib/naver-place/types";
 import { getPublicSiteProfile } from "@/lib/public/site-config";
 import { createPublicMetadata } from "@/lib/seo";
 
@@ -59,6 +59,22 @@ function regionFromAddress(address?: string | null) {
   return address.split(/\s+/).slice(0, 2).join(" ");
 }
 
+function displayField(value?: string | null) {
+  return value && value.trim() ? value : "확인 불가";
+}
+
+function dataStatusNotice(status?: PlaceDataStatus) {
+  if (status === "fetch_failed" || status === "parse_failed") {
+    return "네이버 플레이스 공개 데이터를 정상적으로 불러오지 못했습니다. 잠시 후 다시 시도하거나 다른 네이버 플레이스 URL을 입력해 주세요.";
+  }
+
+  if (status === "partial") {
+    return "네이버 공개 정보 중 일부만 확인되어 가능한 항목만 기준으로 진단했습니다.";
+  }
+
+  return "";
+}
+
 export default async function AuditResultPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
   const selfPlaceSnapshot = decodeSelfPlaceAuditSnapshot(id);
@@ -82,6 +98,7 @@ export default async function AuditResultPage({ params }: { params: Promise<{ id
   const region = audit?.region || selfInput?.region || regionFromAddress(placeResult?.place.roadAddress || placeResult?.place.address);
   const placeUrl = placeResult?.place.normalizedUrl || audit?.place_url || selfInput?.placeUrl || "";
   const storedAuditId = audit?.id;
+  const notice = dataStatusNotice(placeResult?.place.dataStatus);
 
   return (
     <>
@@ -107,11 +124,16 @@ export default async function AuditResultPage({ params }: { params: Promise<{ id
                   {businessName} 자동진단 결과
                 </h1>
                 <p className="mt-4 text-base leading-8 text-muted">{result.summary}</p>
+                {notice ? (
+                  <div className="mt-5 rounded-[8px] border border-amber-200 bg-amber-50 p-4 text-sm font-bold leading-7 text-amber-900">
+                    {notice}
+                  </div>
+                ) : null}
                 {placeResult ? (
                   <div className="mt-6 grid gap-3 sm:grid-cols-3">
                     <div className="rounded-[8px] bg-ink p-4 text-white">
                       <p className="text-xs font-bold text-white/65">진단 점수</p>
-                      <p className="mt-2 text-3xl font-extrabold">{placeResult.score ?? "-"}점</p>
+                      <p className="mt-2 text-3xl font-extrabold">{placeResult.score !== null ? `${placeResult.score}점` : "진단 제한"}</p>
                     </div>
                     <div className="rounded-[8px] bg-pale-mint p-4">
                       <p className="text-xs font-bold text-accent">등급</p>
@@ -120,14 +142,14 @@ export default async function AuditResultPage({ params }: { params: Promise<{ id
                     <div className="rounded-[8px] bg-ivory p-4">
                       <p className="text-xs font-bold text-muted">계산 기준</p>
                       <p className="mt-2 text-lg font-extrabold text-ink">
-                        {placeResult.earnedScore}/{placeResult.maxScore}
+                        {placeResult.maxScore > 0 ? `${placeResult.earnedScore}/${placeResult.maxScore}` : "평가 불가"}
                       </p>
                     </div>
                   </div>
                 ) : null}
                 <div className="mt-6 grid gap-3 rounded-[8px] bg-ivory p-5 text-sm leading-7 text-muted sm:grid-cols-2">
-                  <p><span className="font-bold text-ink">업종</span> {industry}</p>
-                  <p><span className="font-bold text-ink">지역</span> {region}</p>
+                  <p><span className="font-bold text-ink">업종</span> {displayField(industry)}</p>
+                  <p><span className="font-bold text-ink">지역</span> {displayField(region)}</p>
                   <p><span className="font-bold text-ink">데이터 방식</span> {placeResult ? placeResult.dataSourceLabel : "사용자 입력 기반 이전 진단"}</p>
                   <p><span className="font-bold text-ink">마지막 확인</span> {placeResult ? formatDateTime(placeResult.fetchedAt) : "상담 단계 확인"}</p>
                 </div>

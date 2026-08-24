@@ -5,10 +5,14 @@ export type PlaceDataAvailability = {
   businessHours: boolean;
 };
 
+export type PlaceDataStatus = "success" | "partial" | "fetch_failed" | "parse_failed" | "invalid_place";
+
 export type NaverPlaceData = {
   placeId: string;
   sourceUrl: string;
   normalizedUrl: string;
+  dataStatus: PlaceDataStatus;
+  failureReason: string | null;
   name: string | null;
   category: string | null;
   address: string | null;

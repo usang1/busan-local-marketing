@@ -12,14 +12,14 @@ type CreateAuditOptions = {
 
 function regionFromPlace(place: NaverPlaceData) {
   const address = place.roadAddress || place.address;
-  if (!address) return "확인 필요";
-  return address.split(/\s+/).slice(0, 2).join(" ") || "확인 필요";
+  if (!address) return "확인 불가";
+  return address.split(/\s+/).slice(0, 2).join(" ") || "확인 불가";
 }
 
 function auditRow(place: NaverPlaceData, analysis: PlaceAnalysisResult) {
   return {
     business_name: place.name || `네이버 플레이스 ${place.placeId}`,
-    industry: place.category || "확인 필요",
+    industry: place.category || "확인 불가",
     region: regionFromPlace(place),
     place_url: place.normalizedUrl,
     input_data: {

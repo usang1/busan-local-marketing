@@ -4,6 +4,7 @@ const allowedNaverHosts = new Set([
   "map.naver.com",
   "m.map.naver.com",
   "m.place.naver.com",
+  "place.naver.com",
   "pcmap.place.naver.com",
   "place.map.naver.com",
   "naver.me",
@@ -21,6 +22,20 @@ const placePathKinds = [
   "accommodation",
   "lodging",
   "attraction",
+  "shopping",
+  "theater",
+  "pharmacy",
+  "mart",
+  "cvs",
+  "gas",
+  "school",
+  "golfcourse",
+  "trail",
+  "pet",
+  "popupstore",
+  "pollingplace",
+  "evcs",
+  "parking",
 ] as const;
 
 type PlacePathKind = (typeof placePathKinds)[number];
@@ -44,7 +59,7 @@ function cleanInput(input: string) {
   const trimmed = input.trim();
   if (!trimmed) return "";
   if (/^https?:\/\//i.test(trimmed)) return trimmed;
-  if (/^(naver\.com|www\.naver\.com|map\.naver\.com|m\.map\.naver\.com|m\.place\.naver\.com|pcmap\.place\.naver\.com|place\.map\.naver\.com|naver\.me)\//i.test(trimmed)) {
+  if (/^(naver\.com|www\.naver\.com|map\.naver\.com|m\.map\.naver\.com|m\.place\.naver\.com|place\.naver\.com|pcmap\.place\.naver\.com|place\.map\.naver\.com|naver\.me)\//i.test(trimmed)) {
     return `https://${trimmed}`;
   }
   return trimmed;
@@ -59,7 +74,7 @@ export function normalizePlaceHomeUrl(placeId: string, pathKind: PlacePathKind =
 }
 
 function extractPlaceIdentity(url: URL) {
-  const pathname = decodeURIComponent(url.pathname);
+  const pathname = safeDecode(url.pathname);
   const entryMatch = pathname.match(/\/(?:p\/)?entry\/place\/(\d+)(?:[/?#]|$)/);
   if (entryMatch?.[1]) return { placeId: entryMatch[1], pathKind: "place" as const };
 
@@ -71,13 +86,29 @@ function extractPlaceIdentity(url: URL) {
     return { placeId: kindMatch[1], pathKind: pathKind || "place" };
   }
 
-  const placeId = url.searchParams.get("placeId") || url.searchParams.get("place_id");
+  const decodedUrl = safeDecode(url.href);
+  const fullEntryMatch = decodedUrl.match(/\/(?:p\/)?entry\/place\/(\d{5,})(?:[/?#&]|$)/);
+  if (fullEntryMatch?.[1]) return { placeId: fullEntryMatch[1], pathKind: "place" as const };
+
+  const fullKindMatch = decodedUrl.match(new RegExp(`/(?:${placePathKindPattern})/(\\d{5,})(?:[/?#&]|$)`));
+  if (fullKindMatch?.[1]) return { placeId: fullKindMatch[1], pathKind: "place" as const };
+
+  const placeId = url.searchParams.get("placeId") || url.searchParams.get("place_id") || url.searchParams.get("id");
   return placeId && /^\d+$/.test(placeId) ? { placeId, pathKind: "place" as const } : null;
 }
 
 export function extractNaverPlaceId(input: string): ParsedNaverPlaceUrl {
   const cleaned = cleanInput(input);
   let url: URL;
+
+  if (/^\d{5,}$/.test(cleaned)) {
+    return {
+      valid: true,
+      placeId: cleaned,
+      normalizedUrl: normalizePlaceHomeUrl(cleaned),
+      inputUrl: cleaned,
+    };
+  }
 
   try {
     url = new URL(cleaned);
@@ -136,7 +167,7 @@ function safeRedirectUrl(location: string, baseUrl: string) {
 function findPlaceUrlInHtml(html: string, baseUrl: string) {
   const decoded = html.replaceAll("\\/", "/").replace(/&amp;/g, "&");
   const candidates = [
-    ...decoded.matchAll(/https?:\/\/(?:m\.place|pcmap\.place|place\.map|map|m\.map)\.naver\.com\/[^"'<>\s)]+/gi),
+    ...decoded.matchAll(/https?:\/\/(?:m\.place|place|pcmap\.place|place\.map|map|m\.map)\.naver\.com\/[^"'<>\s)]+/gi),
     ...decoded.matchAll(/(?:href|content)=["']([^"']*(?:\/(?:place|restaurant|cafe|hospital|hairshop|beauty|store|business|accommodation|lodging|attraction)\/|\/entry\/place\/|\/p\/entry\/place\/)\d+[^"']*)["']/gi),
   ];
 
@@ -149,6 +180,14 @@ function findPlaceUrlInHtml(html: string, baseUrl: string) {
   }
 
   return null;
+}
+
+function safeDecode(value: string) {
+  try {
+    return decodeURIComponent(value);
+  } catch {
+    return value;
+  }
 }
 
 async function fetchRedirectLocation(url: string, method: "HEAD" | "GET") {

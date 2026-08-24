@@ -39,6 +39,18 @@ function gradeFromScore(score: number | null): PlaceAnalysisResult["grade"] {
   return "D";
 }
 
+function limitedSummary(place: NaverPlaceData) {
+  if (place.dataStatus === "fetch_failed") {
+    return "네이버 플레이스 공개 데이터를 정상적으로 불러오지 못했습니다. 잠시 후 다시 시도하거나 다른 네이버 플레이스 URL을 입력해 주세요.";
+  }
+
+  if (place.dataStatus === "parse_failed") {
+    return "네이버 응답에서 업체 핵심 정보를 확인하지 못했습니다. 응답 구조가 변경되었거나 공개 정보가 제한된 상태일 수 있습니다.";
+  }
+
+  return "네이버 공개 정보에서 평가 가능한 항목이 충분히 확인되지 않았습니다. 확인된 데이터만 기준으로 상세 점검이 필요합니다.";
+}
+
 function statusFromRate(rate: number) {
   if (rate >= 0.8) return "good" as const;
   if (rate >= 0.55) return "needs_improvement" as const;
@@ -299,7 +311,7 @@ export function analyzePlace(place: NaverPlaceData): PlaceAnalysisResult {
     maxScore,
     summary:
       score === null
-        ? "네이버 공개 정보에서 평가 가능한 항목이 충분히 확인되지 않았습니다. 확인된 데이터만 기준으로 상세 점검이 필요합니다."
+        ? limitedSummary(place)
         : `${place.name || "해당 매장"}의 네이버 플레이스 공개 정보를 기준으로 ${score}점(${gradeFromScore(score)})입니다. 확인되지 않은 항목은 점수 계산에서 제외했습니다.`,
     strengths: positives.length ? positives : ["공개 정보에서 강점으로 분류할 수 있는 항목이 아직 충분히 확인되지 않았습니다."],
     improvements: priorityImprovements,
